@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>先進顯微鏡技術實驗室 · 內部知識庫</title>
+<style>
+  :root {
+    --bg: #f4f6f8;
+    --card: #ffffff;
+    --ink: #1f2933;
+    --sub: #616e7c;
+    --accent: #0e7c86;
+    --accent-soft: #e0f2f3;
+    --warn: #b7791f;
+    --warn-soft: #fdf3e0;
+    --line: #e4e9ee;
+    --radius: 14px;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
+    background: var(--bg); color: var(--ink); line-height: 1.7;
+  }
+  header {
+    background: linear-gradient(135deg, #0e7c86 0%, #14919b 60%, #1aa6b0 100%);
+    color: #fff; padding: 40px 24px 32px;
+  }
+  .wrap { max-width: 1000px; margin: 0 auto; }
+  header h1 { font-size: 1.7rem; letter-spacing: .05em; }
+  header p { opacity: .92; margin-top: 6px; font-size: .95rem; }
+  nav {
+    position: sticky; top: 0; z-index: 10;
+    background: rgba(255,255,255,.95); backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line);
+  }
+  nav .wrap { display: flex; gap: 4px; overflow-x: auto; padding: 0 16px; }
+  nav a {
+    padding: 12px 14px; text-decoration: none; color: var(--sub);
+    font-size: .92rem; white-space: nowrap; border-bottom: 2px solid transparent;
+  }
+  nav a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+  main { padding: 28px 16px 60px; }
+  section { margin-bottom: 36px; scroll-margin-top: 60px; }
+  h2 {
+    font-size: 1.2rem; margin-bottom: 14px; color: var(--accent);
+    display: flex; align-items: center; gap: 8px;
+  }
+  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+  .card {
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 20px 22px;
+    box-shadow: 0 1px 3px rgba(31,41,51,.06);
+  }
+  .card h3 { font-size: 1.02rem; margin-bottom: 10px; }
+  .card p, .card li { font-size: .92rem; color: var(--ink); }
+  .card ul, .card ol { padding-left: 20px; }
+  .tag {
+    display: inline-block; font-size: .75rem; padding: 2px 10px;
+    border-radius: 99px; background: var(--accent-soft); color: var(--accent);
+    margin-left: 6px; vertical-align: middle; font-weight: 600;
+  }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--sub); font-weight: 600; font-size: .82rem; }
+  .callout {
+    border-left: 4px solid var(--warn); background: var(--warn-soft);
+    padding: 12px 16px; border-radius: 0 10px 10px 0; font-size: .92rem; margin-top: 12px;
+  }
+  .callout.info { border-left-color: var(--accent); background: var(--accent-soft); }
+  footer { text-align: center; color: var(--sub); font-size: .82rem; padding: 24px; border-top: 1px solid var(--line); }
+  .steps li { margin-bottom: 4px; }
+  .card { overflow-x: auto; }
+  img, table { max-width: 100%; }
+  @media (max-width: 600px) {
+    header { padding: 26px 16px 20px; }
+    header h1 { font-size: 1.3rem; }
+    header p { font-size: .82rem; }
+    main { padding: 18px 12px 40px; }
+    .cards { grid-template-columns: 1fr; gap: 12px; }
+    .card { padding: 15px 16px; }
+    h2 { font-size: 1.08rem; }
+    table { font-size: .82rem; }
+    th, td { padding: 6px 6px; }
+    nav a { padding: 10px 10px; font-size: .86rem; }
+    .callout { font-size: .86rem; padding: 10px 12px; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <h1>🔬 先進顯微鏡技術實驗室</h1>
+    <p>內部知識庫 · 化306-1 · 明志科技大學化工系 · 指導教授：杜鶴芸</p>
+  </div>
+</header>
+
+<nav><div class="wrap">
+  <a href="#print">3D 列印區</a>
+  <a href="#safety">安全與檢查</a>
+  <a href="#waste">廢液處理</a>
+  <a href="#buy">採購報帳</a>
+  <a href="#members">成員</a>
+  <a href="#rules">其他規則</a>
+</div></nav>
+
+<main class="wrap">
+
+  <section id="print">
+    <h2>🖨️ 3D 列印區</h2>
+    <div class="card" style="margin-bottom:16px">
+      <table>
+        <tr><th>機器</th><th>類型</th><th>定位</th><th>使用資格</th></tr>
+        <tr><td>Bambu Lab H2D</td><td>FDM</td><td>主力機</td><td>需登記</td></tr>
+        <tr><td>Creality Ender 3 S1</td><td>FDM</td><td>備用機</td><td>需受訓 <span class="tag warn">手動調平</span></td></tr>
+        <tr><td>San Draw S050</td><td>矽膠列印</td><td>矽膠件專用</td><td>需受訓 <span class="tag warn">流程特殊</span></td></tr>
+      </table>
+      <div class="callout info">
+        <strong>登記規則：</strong>使用<strong>前</strong>填機器旁紙本；塑膠機使用<strong>後</strong>掃紙本上的 QR 填 Google 表單。<br>
+        <strong>傳檔規定：</strong>H2D 盡量不聯網，用<strong>隨身碟</strong>傳檔。
+      </div>
+    </div>
+    <div class="cards">
+      <div class="card">
+        <h3>🩹 第一層黏不住／翹曲急救</h3>
+        <ol class="steps">
+          <li>中性洗碗精洗打印板——<strong>紋理板可用菜瓜布，光面板只能用海綿</strong></li>
+          <li>上膠水／平台膠</li>
+          <li>改切片設定（加 brim、調溫度）</li>
+        </ol>
+      </div>
+      <div class="card">
+        <h3>🎓 使用考核（草案）</h3>
+        <ul>
+          <li><strong>Lv.1</strong>：H2D——規則問答＋陪同完整列印一次</li>
+          <li><strong>Lv.2</strong>：＋Ender——手動調平實作</li>
+          <li><strong>Lv.3</strong>：＋矽膠機——受訓＋獨立完成一件</li>
+        </ul>
+        <p style="color:var(--sub);font-size:.82rem;margin-top:8px">想學任何一台，找 3D 列印區管理人</p>
+      </div>
+      <div class="card">
+        <h3>📚 官方資源</h3>
+        <ul>
+          <li><a href="https://wiki.bambulab.com">Bambu Lab Wiki</a>——H2D 教學與故障排除</li>
+          <li><a href="https://www.youtube.com/watch?v=HKKYj6frskE">San Draw YouTube</a>——矽膠機操作教程</li>
+          <li>Ender 原廠手冊——實驗室知識庫內有 PDF</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="safety">
+    <h2>🛡️ 安全與檢查</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>檢查的年度規律</h3>
+        <table>
+          <tr><th>檢查</th><th>頻率</th></tr>
+          <tr><td>實驗室安全衛生聯合檢查</td><td>每學期一次（環安室）</td></tr>
+          <tr><td>化工館消防檢查</td><td>約每年 1 月</td></tr>
+        </table>
+        <p style="margin-top:8px;font-size:.85rem;color:var(--sub)">受檢日以化工系技士每學期寄的行程表為準</p>
+      </div>
+      <div class="card">
+        <h3>每學期初自主檢查重點</h3>
+        <ul>
+          <li>巡檢系統填查核表（校內網）</li>
+          <li>安全衛生告知單（簽名紀錄保存 3 年）</li>
+          <li>消防設備、防護器具清冊</li>
+          <li>化學藥品清單<strong>每學年更新</strong></li>
+          <li>有機溶劑＋特化<strong>紙本檢點表</strong>留室備查</li>
+          <li>環境清潔</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <section id="waste">
+    <h2>🧪 廢液處理</h2>
+    <div class="card">
+      <p><strong>平常倒廢液：先分有機／無機，倒對桶。</strong></p>
+      <table style="margin-top:8px">
+        <tr><th>有機類</th><th>無機類</th></tr>
+        <tr><td>含鹵有機、不含鹵有機、有機酸</td><td>無機酸、氧化性酸、鹼性、含砷、重金屬混和</td></tr>
+      </table>
+      <div class="callout">
+        桶子到 <strong>50%–80% 滿</strong>就要登入學校「實驗室廢液管理系統」申請清運（單桶上限 20 公升）。發現快滿請告知管理人。
+      </div>
+    </div>
+  </section>
+
+  <section id="buy">
+    <h2>🛒 採購與報帳</h2>
+    <div class="card">
+      <p style="font-weight:700">鐵則：到貨一律拍照商品，發票交給行政助理報帳。</p>
+      <table style="margin-top:10px">
+        <tr><th>類別</th><th>流程</th></tr>
+        <tr><td>藥品</td><td>自己提出 → 老師同意 → 依老師指示向藥品商或配合廠商訂購</td></tr>
+        <tr><td>矽膠耗材</td><td>在耗材群組直接說需求</td></tr>
+        <tr><td>塑膠耗材</td><td>自己找代理商 → 購物車或報價單給老師 → 同意後下單</td></tr>
+      </table>
+    </div>
+  </section>
+
+  <section id="members">
+    <h2>👥 成員</h2>
+    <div class="card">
+      <table>
+        <tr><th>姓名</th><th>身分</th><th>研究主題／職責</th></tr>
+        <tr><td>杜鶴芸</td><td>指導教授</td><td>尖端材料成長、觸媒製備與分析、電化學／原子力顯微鏡</td></tr>
+        <tr><td>3D 列印區管理人</td><td>碩士生</td><td>熱模擬、3D 列印</td></tr>
+        <tr><td>碩士生（電池組）</td><td>碩士生</td><td>電池</td></tr>
+        <tr><td>碩士生（防腐蝕組）</td><td>碩士生</td><td>金屬防腐蝕</td></tr>
+        <tr><td>碩士生（115 入學）</td><td>碩士生</td><td>題目規劃中</td></tr>
+        <tr><td>行政助理</td><td>行政</td><td>報帳</td></tr>
+      </table>
+      <p style="margin-top:8px;font-size:.82rem;color:var(--sub)">聯絡方式請洽實驗室內部通訊錄</p>
+    </div>
+  </section>
+
+  <section id="rules">
+    <h2>📋 其他規則</h2>
+    <div class="cards">
+      <div class="card">
+        <h3>值日</h3>
+        <p>公共區域每週輪值（順序見實驗室公告）；自己的實驗桌自己顧。<strong>環安室檢查前一週全員大掃除。</strong></p>
+      </div>
+      <div class="card">
+        <h3>數據管理</h3>
+        <p>數據、切片檔、報告存實驗室電腦 <strong>D 碟，一人一資料夾</strong>。新成員報到時自己開資料夾。</p>
+      </div>
+      <div class="card">
+        <h3>新生第一步</h3>
+        <p>找 3D 列印區管理人安排儀器受訓；詳細指南見實驗室知識庫「新生訓練」。</p>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  先進顯微鏡技術實驗室內部知識庫 · 更新：2026-07-07 · 由第二大腦（Obsidian）知識庫生成
+</footer>
+
+</body>
+</html>
