@@ -46,13 +46,14 @@
     font-size: 1.2rem; margin-bottom: 14px; color: var(--accent);
     display: flex; align-items: center; gap: 8px;
   }
+  h3 { font-size: 1.02rem; margin-bottom: 10px; }
   .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
   .card {
     background: var(--card); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 20px 22px;
     box-shadow: 0 1px 3px rgba(31,41,51,.06);
+    overflow-x: auto;
   }
-  .card h3 { font-size: 1.02rem; margin-bottom: 10px; }
   .card p, .card li { font-size: .92rem; color: var(--ink); }
   .card ul, .card ol { padding-left: 20px; }
   .tag {
@@ -61,7 +62,7 @@
     margin-left: 6px; vertical-align: middle; font-weight: 600;
   }
   .tag.warn { background: var(--warn-soft); color: var(--warn); }
-  table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+  table { width: 100%; border-collapse: collapse; font-size: .9rem; max-width: 100%; }
   th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
   th { color: var(--sub); font-weight: 600; font-size: .82rem; }
   .callout {
@@ -71,8 +72,34 @@
   .callout.info { border-left-color: var(--accent); background: var(--accent-soft); }
   footer { text-align: center; color: var(--sub); font-size: .82rem; padding: 24px; border-top: 1px solid var(--line); }
   .steps li { margin-bottom: 4px; }
-  .card { overflow-x: auto; }
-  img, table { max-width: 100%; }
+  a.golink { color: var(--accent); font-weight: 600; text-decoration: none; }
+  a.golink:hover { text-decoration: underline; }
+  .morebtn {
+    display: inline-block; margin-top: 10px; padding: 6px 16px;
+    background: var(--accent); color: #fff; border-radius: 99px;
+    font-size: .85rem; text-decoration: none; font-weight: 600;
+  }
+  .morebtn:hover { opacity: .88; }
+
+  /* ===== 詳細頁（點擊展開的子頁面，純 CSS :target 實作） ===== */
+  .detail { display: none; }
+  .detail:target {
+    display: block; position: fixed; inset: 0; z-index: 50;
+    overflow-y: auto; background: var(--bg);
+    padding: 20px 16px 80px;
+  }
+  .detail .wrap { max-width: 800px; }
+  .backbar {
+    position: sticky; top: 0; z-index: 5; margin: -20px -16px 18px;
+    background: rgba(244,246,248,.95); backdrop-filter: blur(6px);
+    border-bottom: 1px solid var(--line); padding: 12px 16px;
+  }
+  .backbar a {
+    color: var(--accent); text-decoration: none; font-weight: 700; font-size: .95rem;
+  }
+  .detail h2 { margin-top: 4px; }
+  .detail .card { margin-bottom: 14px; }
+
   @media (max-width: 600px) {
     header { padding: 26px 16px 20px; }
     header h1 { font-size: 1.3rem; }
@@ -90,7 +117,7 @@
 </head>
 <body>
 
-<header>
+<header id="top">
   <div class="wrap">
     <h1>🔬 先進顯微鏡技術實驗室</h1>
     <p>內部知識庫 · 化306-1 · 明志科技大學化工系 · 指導教授：杜鶴芸</p>
@@ -109,13 +136,13 @@
 <main class="wrap">
 
   <section id="print">
-    <h2>🖨️ 3D 列印區</h2>
+    <h2>🖨️ 3D 列印區 <span class="tag">點機器名稱看操作步驟</span></h2>
     <div class="card" style="margin-bottom:16px">
       <table>
         <tr><th>機器</th><th>類型</th><th>定位</th><th>使用資格</th></tr>
-        <tr><td>Bambu Lab H2D</td><td>FDM</td><td>主力機</td><td>需登記</td></tr>
-        <tr><td>Creality Ender 3 S1</td><td>FDM</td><td>備用機</td><td>需受訓 <span class="tag warn">手動調平</span></td></tr>
-        <tr><td>San Draw S050</td><td>矽膠列印</td><td>矽膠件專用</td><td>需受訓 <span class="tag warn">流程特殊</span></td></tr>
+        <tr><td><a class="golink" href="#d-h2d">Bambu Lab H2D →</a></td><td>FDM</td><td>主力機</td><td>需登記</td></tr>
+        <tr><td><a class="golink" href="#d-ender">Creality Ender 3 S1 →</a></td><td>FDM</td><td>備用機</td><td>需受訓 <span class="tag warn">手動調平</span></td></tr>
+        <tr><td><a class="golink" href="#d-s050">San Draw S050 →</a></td><td>矽膠列印</td><td>矽膠件專用</td><td>需受訓 <span class="tag warn">流程特殊</span></td></tr>
       </table>
       <div class="callout info">
         <strong>登記規則：</strong>使用<strong>前</strong>填機器旁紙本；塑膠機使用<strong>後</strong>掃紙本上的 QR 填 Google 表單。<br>
@@ -134,11 +161,11 @@
       <div class="card">
         <h3>🎓 使用考核（草案）</h3>
         <ul>
-          <li><strong>Lv.1</strong>：H2D——規則問答＋陪同完整列印一次</li>
-          <li><strong>Lv.2</strong>：＋Ender——手動調平實作</li>
-          <li><strong>Lv.3</strong>：＋矽膠機——受訓＋獨立完成一件</li>
+          <li><strong>Lv.1</strong>：H2D</li>
+          <li><strong>Lv.2</strong>：＋Ender</li>
+          <li><strong>Lv.3</strong>：＋矽膠機</li>
         </ul>
-        <p style="color:var(--sub);font-size:.82rem;margin-top:8px">想學任何一台，找 3D 列印區管理人</p>
+        <a class="morebtn" href="#d-exam">看考核內容 →</a>
       </div>
       <div class="card">
         <h3>📚 官方資源</h3>
@@ -164,15 +191,9 @@
         <p style="margin-top:8px;font-size:.85rem;color:var(--sub)">受檢日以化工系技士每學期寄的行程表為準</p>
       </div>
       <div class="card">
-        <h3>每學期初自主檢查重點</h3>
-        <ul>
-          <li>巡檢系統填查核表（校內網）</li>
-          <li>安全衛生告知單（簽名紀錄保存 3 年）</li>
-          <li>消防設備、防護器具清冊</li>
-          <li>化學藥品清單<strong>每學年更新</strong></li>
-          <li>有機溶劑＋特化<strong>紙本檢點表</strong>留室備查</li>
-          <li>環境清潔</li>
-        </ul>
+        <h3>每學期初自主檢查</h3>
+        <p>共 8 項：查核表、告知單、自動檢查、消防、防護具、藥品清單、清潔、檢點表。</p>
+        <a class="morebtn" href="#d-check">看 8 項詳細內容 →</a>
       </div>
     </div>
   </section>
@@ -208,7 +229,7 @@
     <h2>👥 成員</h2>
     <div class="card">
       <table>
-        <tr><th>姓名</th><th>身分</th><th>研究主題／職責</th></tr>
+        <tr><th>成員</th><th>身分</th><th>研究主題／職責</th></tr>
         <tr><td>杜鶴芸</td><td>指導教授</td><td>尖端材料成長、觸媒製備與分析、電化學／原子力顯微鏡</td></tr>
         <tr><td>3D 列印區管理人</td><td>碩士生</td><td>熱模擬、3D 列印</td></tr>
         <tr><td>碩士生（電池組）</td><td>碩士生</td><td>電池</td></tr>
@@ -239,6 +260,184 @@
   </section>
 
 </main>
+
+<!-- ===== 詳細頁：H2D ===== -->
+<section class="detail" id="d-h2d">
+  <div class="backbar"><a href="#print">← 回總覽</a></div>
+  <div class="wrap">
+    <h2>🖨️ Bambu Lab H2D（主力機）</h2>
+    <div class="card">
+      <h3>基本資訊</h3>
+      <ul>
+        <li>切片軟體：Bambu Studio</li>
+        <li>材料：PLA、PETG、ABS／ASA、TPU</li>
+        <li>送料：AMS 自動換料＋外掛料架都有（常用料進 AMS，特殊料走外掛）</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>操作步驟</h3>
+      <ol class="steps">
+        <li>開機與檢查：確認平台乾淨、料量足夠</li>
+        <li>上料／換料：常用料放 AMS；特殊料（如 TPU）掛外掛料架</li>
+        <li>切片：Bambu Studio 選對材料與板面設定</li>
+        <li>傳檔：<strong>依規定用隨身碟</strong>（機台盡量不聯網）</li>
+        <li>列印中注意：頭幾層留意第一層有沒有黏好</li>
+        <li>取件與收尾，並完成使用後表單登記</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>第一層黏不住／翹曲怎麼救</h3>
+      <ol class="steps">
+        <li>拿<strong>中性洗碗精洗打印板</strong>——紋理板可用菜瓜布刷；<strong>光面板只能用海綿</strong>，菜瓜布會刮花！</li>
+        <li>上膠水／平台膠</li>
+        <li>改切片設定（加 brim、調溫度）</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>耗材存放</h3>
+      <ul>
+        <li>開封的線材：防潮箱＋AMS 裡</li>
+        <li>未開封：封好的紙箱</li>
+        <li>常用小量：好拿的箱子</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>卡關查這裡</h3>
+      <p><a href="https://wiki.bambulab.com">Bambu Lab Wiki</a>——官方教學與故障排除大全</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 詳細頁：Ender ===== -->
+<section class="detail" id="d-ender">
+  <div class="backbar"><a href="#print">← 回總覽</a></div>
+  <div class="wrap">
+    <h2>🖨️ Creality Ender 3 S1（備用機）</h2>
+    <div class="callout" style="margin-bottom:14px"><strong>需受訓才能用</strong>——這台要手動調平，沒有 H2D 的自動校正，調不好第一層就失敗。想學找 3D 列印區管理人。</div>
+    <div class="card">
+      <h3>調平（受訓重點）</h3>
+      <ol class="steps">
+        <li><strong>自動調平</strong>：開機 → 螢幕選「Level」→ 自動歸位並做 16 點校正</li>
+        <li><strong>設 Z-offset</strong>：Prepare → Z-offset，調到噴嘴與平台距離約<strong>一張 A4 紙厚（0.08–0.1mm）</strong>，按旋鈕確認</li>
+        <li><strong>輔助調平</strong>（平台傾斜 &gt;2mm、自動調平失敗時）：Control → Reset configuration → Auto Home → Move Z 歸零 → 設 Z-offset → Disable stepper → 轉熱床底下四角旋鈕，讓四角都是一張 A4 紙的距離</li>
+        <li><strong>判斷</strong>：太遠→黏不住；太近→擠不出、刮平台；剛好→線材均勻擠出平貼</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>上料</h3>
+      <ol class="steps">
+        <li>線材尾端剪 <strong>45° 斜角</strong></li>
+        <li>穿過斷料偵測器的孔 → 按住擠出機把手 → 沿孔插到噴嘴位置</li>
+        <li>預熱噴嘴，到溫後看到料流出＝完成</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>換料</h3>
+      <ul>
+        <li><strong>沒在列印</strong>：噴嘴加熱到 185°C 以上 → 按住把手<strong>快速抽出</strong>（慢慢拉會卡管）→ 照上料步驟換新料</li>
+        <li><strong>列印中</strong>：先暫停 → 停穩後抽出 → 穿新料 → 先擠掉殘料再續印</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>列印</h3>
+      <ol class="steps">
+        <li>切片（Creality Slicer／Cura）存到記憶卡</li>
+        <li>⚠️ <strong>檔名只能英文或數字</strong>——中文檔名螢幕顯示不出來</li>
+        <li>插卡 → 旋鈕選檔 → 開印</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>安全注意（原廠警告）</h3>
+      <ul>
+        <li>開機狀態<strong>不要用手移動噴嘴或平台</strong>（會觸發保護斷電）</li>
+        <li>噴嘴和平台高溫，列印中勿碰；清噴嘴一定用工具</li>
+        <li>清潔前先關電源；平台可用玻璃清潔劑或 IPA 擦</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 詳細頁：S050 ===== -->
+<section class="detail" id="d-s050">
+  <div class="backbar"><a href="#print">← 回總覽</a></div>
+  <div class="wrap">
+    <h2>🖨️ San Draw S050 矽膠列印機</h2>
+    <div class="callout" style="margin-bottom:14px"><strong>需受訓才能用</strong>——矽膠列印流程跟 FDM 完全不同，弄錯會浪費貴料或堵管。想學找 3D 列印區管理人。</div>
+    <div class="card">
+      <h3>基本資訊</h3>
+      <ul>
+        <li>技術：FAM（Fluid Additive Manufacturing，三遞專利）</li>
+        <li>軟體：三遞原廠軟體（FAMufacture／Cura）</li>
+        <li>材料：SIL28（較硬）、SIL18（較軟），依研究需求選硬度</li>
+        <li>固化：<strong>自然固化即可，不用烤箱</strong></li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>⚠️ 最容易出事的環節</h3>
+      <ol class="steps">
+        <li><strong>校正</strong>——沒校好直接影響成敗，列印前務必確實</li>
+        <li><strong>擠料異常要警覺</strong>——擠料不順可能是<strong>該換噴頭</strong>的訊號，硬印會失敗</li>
+        <li><strong>裝料／換料</strong>——步驟特殊，沒學過不要自己來</li>
+        <li><strong>噴頭堵塞</strong>——矽膠在管路裡固化就麻煩了</li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>教學資源</h3>
+      <p><a href="https://www.youtube.com/watch?v=HKKYj6frskE">San Draw 官方 YouTube</a>——S050 介紹與操作教程，受訓前先看</p>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 詳細頁：考核制度 ===== -->
+<section class="detail" id="d-exam">
+  <div class="backbar"><a href="#print">← 回總覽</a></div>
+  <div class="wrap">
+    <h2>🎓 3D 列印使用考核制度（草案）</h2>
+    <div class="callout" style="margin-bottom:14px">草案尚未定案，以管理人公告為準。目標：機器貴、耗材貴，確保每個人具備基本能力再上機。</div>
+    <div class="card">
+      <h3>Lv.1 基礎（H2D）</h3>
+      <ul>
+        <li>問答：登記規則（前紙本後表單）、傳檔規定（隨身碟）、打印板清潔（紋理板 vs 光面板）</li>
+        <li>實作：在管理人陪同下完成一次完整列印（切片 → 傳檔 → 上料 → 列印 → 取件 → 登記）</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Lv.2 進階（＋Ender）</h3>
+      <ul>
+        <li>實作：手動調平到管理人認可</li>
+        <li>問答：調平失敗會怎樣、怎麼判斷第一層有沒有黏好</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>Lv.3 矽膠（＋S050）</h3>
+      <ul>
+        <li>受訓：管理人帶一次完整流程（裝料、校正、列印、清潔）</li>
+        <li>問答：擠料不順代表什麼、哪些環節最容易出事</li>
+        <li>實作：獨立完成一件並通過檢查</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ===== 詳細頁：自主檢查 8 項 ===== -->
+<section class="detail" id="d-check">
+  <div class="backbar"><a href="#safety">← 回總覽</a></div>
+  <div class="wrap">
+    <h2>🛡️ 每學期初自主檢查（8 項）</h2>
+    <div class="card">
+      <ol class="steps">
+        <li><strong>實習場所安全衛生認證制度查核表</strong>——線上（實驗室安全巡檢管理系統，校內網）或紙本二擇一</li>
+        <li><strong>自動檢查紀錄</strong>——列管檢查、定期檢查（排氣裝置、滅火器等）、作業檢點</li>
+        <li><strong>安全衛生告知單</strong>——每次實驗課講解安全規定並簽名，<strong>紀錄保存 3 年</strong></li>
+        <li><strong>消防設備自動檢查</strong>——消防栓箱、緊急照明、出口標示燈</li>
+        <li><strong>防護器具</strong>——依實驗性質建清冊，實驗中確實配戴</li>
+        <li><strong>化學藥品管理</strong>——清單<strong>每學年更新</strong>，依性質分類儲放</li>
+        <li><strong>實驗室環境清潔</strong></li>
+        <li><strong>有機溶劑＋特化作業檢點表</strong>——紙本填寫、留室備查（本實驗室不用鋼瓶表）</li>
+      </ol>
+    </div>
+  </div>
+</section>
 
 <footer>
   先進顯微鏡技術實驗室內部知識庫 · 更新：2026-07-07 · 由第二大腦（Obsidian）知識庫生成
