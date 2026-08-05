@@ -101,7 +101,68 @@
   .detail h2 { margin-top: 4px; }
   .detail .card { margin-bottom: 14px; }
 
+  /* ===== 耗材盤點 ===== */
+  .inv-form {
+    display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 10px; align-items: end;
+  }
+  .inv-field { display: flex; flex-direction: column; gap: 4px; }
+  .inv-form .full { grid-column: 1 / -1; }
+  .inv-field label { font-size: .78rem; color: var(--sub); font-weight: 600; }
+  .inv-form input, .inv-form select, .inv-tools input, .inv-tools select {
+    font-family: inherit; font-size: .9rem; color: var(--ink);
+    padding: 7px 10px; border: 1px solid var(--line);
+    border-radius: 8px; background: #fff; width: 100%;
+  }
+  .inv-form input:focus, .inv-form select:focus,
+  .inv-tools input:focus, .inv-tools select:focus {
+    outline: none; border-color: var(--accent);
+  }
+  .btn {
+    font-family: inherit; font-size: .88rem; font-weight: 600;
+    padding: 8px 16px; border: 1px solid var(--accent);
+    border-radius: 99px; background: var(--accent); color: #fff; cursor: pointer;
+    white-space: nowrap;
+  }
+  .btn:hover { opacity: .88; }
+  .btn.ghost { background: #fff; color: var(--accent); }
+  .btn.danger { background: #fff; color: #b3261e; border-color: #e6c9c6; }
+  .inv-tools {
+    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
+    margin-bottom: 12px;
+  }
+  .inv-tools .grow { flex: 1 1 180px; min-width: 140px; }
+  .inv-tools .spacer { flex: 1 1 auto; }
+  #inv-table { min-width: 640px; }   /* 欄位多，窄螢幕改成卡片內橫向捲動，不要擠成一團 */
+  #inv-table td { vertical-align: middle; }
+  #inv-table .num {
+    font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1rem;
+    white-space: nowrap; min-width: 3.4em; text-align: center;
+  }
+  .qty-cell { display: flex; align-items: center; gap: 6px; }
+  .stepper {
+    font-family: inherit; width: 26px; height: 26px; line-height: 1;
+    border: 1px solid var(--line); background: #fff; color: var(--sub);
+    border-radius: 7px; cursor: pointer; font-size: .95rem; flex: none;
+  }
+  .stepper:hover { border-color: var(--accent); color: var(--accent); }
+  .rowact { display: flex; gap: 6px; }
+  .linkbtn {
+    font-family: inherit; background: none; border: none; padding: 0;
+    color: var(--accent); font-size: .82rem; cursor: pointer; font-weight: 600;
+  }
+  .linkbtn:hover { text-decoration: underline; }
+  .linkbtn.del { color: #b3261e; }
+  .cat-pill {
+    display: inline-block; font-size: .74rem; padding: 2px 9px; border-radius: 99px;
+    background: var(--accent-soft); color: var(--accent); font-weight: 600; white-space: nowrap;
+  }
+  .muted { color: var(--sub); font-size: .82rem; }
+  .inv-empty { text-align: center; color: var(--sub); font-size: .9rem; padding: 22px 8px; }
+  .editing { background: var(--warn-soft); }
+
   @media (max-width: 600px) {
+    .inv-form { grid-template-columns: 1fr 1fr; }
     header { padding: 26px 16px 20px; }
     header h1 { font-size: 1.3rem; }
     header p { font-size: .82rem; }
@@ -127,6 +188,7 @@
 
 <nav><div class="wrap">
   <a href="#print">3D 列印區</a>
+  <a href="#inventory">耗材盤點</a>
   <a href="#safety">安全與檢查</a>
   <a href="#waste">廢液處理</a>
   <a href="#buy">採購報帳</a>
@@ -176,6 +238,107 @@
           <li>Ender 原廠手冊——實驗室知識庫內有 PDF</li>
         </ul>
       </div>
+    </div>
+  </section>
+
+  <section id="inventory">
+    <h2>📦 耗材盤點 <span class="tag">存在本機瀏覽器</span></h2>
+
+    <div class="card" style="margin-bottom:16px">
+      <h3>新增／入庫</h3>
+      <form class="inv-form" id="inv-form" autocomplete="off">
+        <div class="inv-field">
+          <label for="inv-cat">類別</label>
+          <select id="inv-cat">
+            <option value="線材">線材</option>
+            <option value="矽膠料">矽膠料</option>
+            <option value="噴頭">噴頭</option>
+            <option value="列印板">列印板</option>
+            <option value="零件耗材">零件耗材</option>
+            <option value="其他">其他</option>
+          </select>
+        </div>
+        <div class="inv-field">
+          <label for="inv-name">品項／材料</label>
+          <input id="inv-name" list="inv-name-list" placeholder="例：PLA" required>
+          <datalist id="inv-name-list">
+            <option value="PLA"><option value="PETG"><option value="ABS"><option value="ASA">
+            <option value="TPU"><option value="SIL28"><option value="SIL18">
+            <option value="黃銅噴頭"><option value="硬化鋼噴頭"><option value="矽膠噴頭">
+            <option value="紋理板"><option value="光面板"><option value="平台膠水">
+          </datalist>
+        </div>
+        <div class="inv-field">
+          <label for="inv-spec">顏色／規格</label>
+          <input id="inv-spec" list="inv-spec-list" placeholder="例：紅色 / 0.4mm">
+          <datalist id="inv-spec-list">
+            <option value="黑色"><option value="白色"><option value="紅色"><option value="藍色">
+            <option value="灰色"><option value="透明">
+            <option value="0.2mm"><option value="0.4mm"><option value="0.6mm"><option value="0.8mm">
+          </datalist>
+        </div>
+        <div class="inv-field">
+          <label for="inv-qty">數量</label>
+          <input id="inv-qty" type="number" step="any" value="1" required>
+        </div>
+        <div class="inv-field">
+          <label for="inv-unit">單位</label>
+          <input id="inv-unit" list="inv-unit-list" placeholder="捲" value="捲">
+          <datalist id="inv-unit-list">
+            <option value="捲"><option value="個"><option value="條"><option value="盒">
+            <option value="瓶"><option value="包"><option value="組"><option value="公克">
+          </datalist>
+        </div>
+        <div class="inv-field full">
+          <label for="inv-note">備註（品牌、放置位置…）</label>
+          <input id="inv-note" placeholder="例：Bambu 原廠，防潮箱第二層">
+        </div>
+        <div class="inv-field full" style="flex-direction:row;gap:8px">
+          <button class="btn" type="submit" id="inv-submit">新增／累加</button>
+          <button class="btn ghost" type="button" id="inv-cancel" hidden>取消編輯</button>
+        </div>
+      </form>
+      <p class="muted" style="margin-top:10px">
+        類別＋品項＋顏色規格完全相同時會<strong>自動累加數量</strong>，不會重複開一列。
+      </p>
+    </div>
+
+    <div class="card">
+      <div class="inv-tools">
+        <input id="inv-search" class="grow" type="search" placeholder="🔍 搜尋品項／顏色／備註">
+        <select id="inv-filter" style="width:auto">
+          <option value="">全部類別</option>
+          <option value="線材">線材</option>
+          <option value="矽膠料">矽膠料</option>
+          <option value="噴頭">噴頭</option>
+          <option value="列印板">列印板</option>
+          <option value="零件耗材">零件耗材</option>
+          <option value="其他">其他</option>
+        </select>
+        <span class="spacer"></span>
+        <button class="btn ghost" type="button" id="inv-export">⬇ 匯出 CSV</button>
+        <button class="btn ghost" type="button" id="inv-import-btn">⬆ 匯入 CSV</button>
+        <input type="file" id="inv-import" accept=".csv,text/csv" hidden>
+        <button class="btn danger" type="button" id="inv-clear">清空</button>
+      </div>
+
+      <table id="inv-table">
+        <thead>
+          <tr>
+            <th>類別</th><th>品項</th><th>顏色／規格</th><th>數量</th>
+            <th>備註</th><th>最後更新</th><th></th>
+          </tr>
+        </thead>
+        <tbody id="inv-body"></tbody>
+      </table>
+      <p class="inv-empty" id="inv-empty" hidden>目前沒有資料，用上面的表單新增第一筆吧。</p>
+      <p class="muted" id="inv-summary" style="margin-top:10px"></p>
+    </div>
+
+    <div class="callout">
+      <strong>資料存在哪裡：</strong>這個頁面沒有伺服器，盤點資料存在<strong>你這台電腦的瀏覽器</strong>裡（localStorage），
+      只有在這個瀏覽器、這個網址看得到。換電腦、換人接手或要備份，請按<strong>匯出 CSV</strong> 存檔，
+      到新的地方再用<strong>匯入 CSV</strong> 讀回來。清除瀏覽器資料會一併清掉，重要盤點請定期匯出。
     </div>
   </section>
 
@@ -443,6 +606,304 @@
 <footer>
   先進顯微鏡技術實驗室內部知識庫 · 更新：2026-07-07 · 由第二大腦（Obsidian）知識庫生成
 </footer>
+
+<script>
+/* ===== 耗材盤點：資料存在瀏覽器 localStorage，靠匯出／匯入 CSV 備份與交接 ===== */
+(function () {
+  var KEY = 'lab-inventory-v1';
+  var items = [];        // {id, cat, name, spec, qty, unit, note, updated}
+  var editingId = null;
+
+  var $ = function (id) { return document.getElementById(id); };
+  var form = $('inv-form'), body = $('inv-body');
+
+  function load() {
+    try {
+      var raw = localStorage.getItem(KEY);
+      items = raw ? JSON.parse(raw) : [];
+      if (!Array.isArray(items)) items = [];
+    } catch (e) { items = []; }
+  }
+  function save() {
+    try {
+      localStorage.setItem(KEY, JSON.stringify(items));
+    } catch (e) {
+      alert('存檔失敗，瀏覽器儲存空間可能已滿或停用。請先匯出 CSV 備份。');
+    }
+  }
+
+  function now() {
+    var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
+    return d.getFullYear() + '-' + p(d.getMonth() + 1) + '-' + p(d.getDate()) +
+           ' ' + p(d.getHours()) + ':' + p(d.getMinutes());
+  }
+  function norm(s) { return (s || '').trim().toLowerCase(); }
+  function same(a, cat, name, spec) {
+    return norm(a.cat) === norm(cat) && norm(a.name) === norm(name) && norm(a.spec) === norm(spec);
+  }
+  // 數量以小數存，顯示時去掉多餘的 .0
+  function fmtQty(n) { return String(Math.round(n * 1000) / 1000); }
+
+  function render() {
+    var kw = norm($('inv-search').value);
+    var cat = $('inv-filter').value;
+    var rows = items.filter(function (it) {
+      if (cat && it.cat !== cat) return false;
+      if (!kw) return true;
+      return (norm(it.name) + ' ' + norm(it.spec) + ' ' + norm(it.note) + ' ' + norm(it.cat)).indexOf(kw) >= 0;
+    });
+
+    body.textContent = '';
+    rows.forEach(function (it) {
+      var tr = document.createElement('tr');
+      if (it.id === editingId) tr.className = 'editing';
+
+      var td = function (child) { var c = document.createElement('td'); if (child != null) c.append(child); tr.append(c); return c; };
+
+      var pill = document.createElement('span');
+      pill.className = 'cat-pill'; pill.textContent = it.cat;
+      td(pill);
+
+      var nameCell = td();
+      nameCell.append(it.name);
+      nameCell.style.fontWeight = '600';
+
+      td(it.spec || '—');
+
+      var qtyCell = td();
+      var box = document.createElement('div'); box.className = 'qty-cell';
+      var minus = document.createElement('button');
+      minus.type = 'button'; minus.className = 'stepper'; minus.textContent = '−';
+      minus.title = '減 1'; minus.setAttribute('aria-label', it.name + ' 減 1');
+      minus.onclick = function () { step(it.id, -1); };
+      var num = document.createElement('span');
+      num.className = 'num'; num.textContent = fmtQty(it.qty) + ' ' + (it.unit || '');
+      var plus = document.createElement('button');
+      plus.type = 'button'; plus.className = 'stepper'; plus.textContent = '+';
+      plus.title = '加 1'; plus.setAttribute('aria-label', it.name + ' 加 1');
+      plus.onclick = function () { step(it.id, 1); };
+      box.append(minus, num, plus);
+      qtyCell.append(box);
+
+      var noteCell = td(it.note || '—');
+      noteCell.className = 'muted';
+
+      var timeCell = td(it.updated || '—');
+      timeCell.className = 'muted';
+
+      var actCell = td();
+      var act = document.createElement('div'); act.className = 'rowact';
+      var ed = document.createElement('button');
+      ed.type = 'button'; ed.className = 'linkbtn'; ed.textContent = '編輯';
+      ed.onclick = function () { startEdit(it.id); };
+      var del = document.createElement('button');
+      del.type = 'button'; del.className = 'linkbtn del'; del.textContent = '刪除';
+      del.onclick = function () { remove(it.id); };
+      act.append(ed, del);
+      actCell.append(act);
+
+      body.append(tr);
+    });
+
+    $('inv-empty').hidden = rows.length > 0;
+    $('inv-empty').textContent = items.length === 0
+      ? '目前沒有資料，用上面的表單新增第一筆吧。'
+      : '沒有符合搜尋條件的項目。';
+
+    var totalKinds = items.length;
+    var cats = {};
+    items.forEach(function (it) { cats[it.cat] = (cats[it.cat] || 0) + 1; });
+    var parts = Object.keys(cats).map(function (c) { return c + ' ' + cats[c] + ' 項'; });
+    $('inv-summary').textContent = totalKinds
+      ? '共 ' + totalKinds + ' 種品項（顯示 ' + rows.length + ' 筆）｜' + parts.join('、')
+      : '';
+  }
+
+  function step(id, d) {
+    var it = items.find(function (x) { return x.id === id; });
+    if (!it) return;
+    it.qty = Math.max(0, (Number(it.qty) || 0) + d);
+    it.updated = now();
+    save(); render();
+  }
+
+  function remove(id) {
+    var it = items.find(function (x) { return x.id === id; });
+    if (!it) return;
+    if (!confirm('確定刪除「' + it.name + (it.spec ? ' ' + it.spec : '') + '」？')) return;
+    items = items.filter(function (x) { return x.id !== id; });
+    if (editingId === id) resetForm();
+    save(); render();
+  }
+
+  function startEdit(id) {
+    var it = items.find(function (x) { return x.id === id; });
+    if (!it) return;
+    editingId = id;
+    $('inv-cat').value = it.cat;
+    $('inv-name').value = it.name;
+    $('inv-spec').value = it.spec;
+    $('inv-qty').value = it.qty;
+    $('inv-unit').value = it.unit;
+    $('inv-note').value = it.note;
+    $('inv-submit').textContent = '儲存修改';
+    $('inv-cancel').hidden = false;
+    render();
+    $('inv-name').focus();
+    document.getElementById('inventory').scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function resetForm() {
+    editingId = null;
+    form.reset();
+    $('inv-qty').value = 1;
+    $('inv-unit').value = '捲';
+    $('inv-submit').textContent = '新增／累加';
+    $('inv-cancel').hidden = true;
+  }
+
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var cat = $('inv-cat').value;
+    var name = $('inv-name').value.trim();
+    var spec = $('inv-spec').value.trim();
+    var qty = Number($('inv-qty').value);
+    var unit = $('inv-unit').value.trim();
+    var note = $('inv-note').value.trim();
+    if (!name) { alert('請填品項名稱'); return; }
+    if (!isFinite(qty)) { alert('數量請填數字'); return; }
+
+    if (editingId) {
+      var it = items.find(function (x) { return x.id === editingId; });
+      if (it) {
+        it.cat = cat; it.name = name; it.spec = spec;
+        it.qty = Math.max(0, qty); it.unit = unit; it.note = note; it.updated = now();
+      }
+    } else {
+      var hit = items.find(function (x) { return same(x, cat, name, spec); });
+      if (hit) {
+        hit.qty = Math.max(0, (Number(hit.qty) || 0) + qty);
+        hit.unit = unit || hit.unit;
+        if (note) hit.note = note;
+        hit.updated = now();
+      } else {
+        items.push({
+          id: 'i' + Date.now() + Math.random().toString(36).slice(2, 7),
+          cat: cat, name: name, spec: spec,
+          qty: Math.max(0, qty), unit: unit, note: note, updated: now()
+        });
+      }
+    }
+    resetForm();
+    save(); render();
+  });
+
+  $('inv-cancel').onclick = function () { resetForm(); render(); };
+  $('inv-search').oninput = render;
+  $('inv-filter').onchange = render;
+
+  $('inv-clear').onclick = function () {
+    if (!items.length) return;
+    if (!confirm('這會刪掉全部 ' + items.length + ' 筆盤點資料，且無法復原。\n建議先匯出 CSV 備份。確定清空？')) return;
+    items = []; resetForm(); save(); render();
+  };
+
+  /* ---- CSV ---- */
+  var HEAD = ['類別', '品項', '顏色／規格', '數量', '單位', '備註', '最後更新'];
+
+  function csvCell(v) {
+    v = v == null ? '' : String(v);
+    return /[",\n\r]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+  }
+
+  $('inv-export').onclick = function () {
+    if (!items.length) { alert('目前沒有資料可以匯出。'); return; }
+    var lines = [HEAD.map(csvCell).join(',')];
+    items.forEach(function (it) {
+      lines.push([it.cat, it.name, it.spec, fmtQty(it.qty), it.unit, it.note, it.updated].map(csvCell).join(','));
+    });
+    // BOM：讓 Excel 正確認出 UTF-8 中文
+    var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });
+    var a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '耗材盤點_' + now().replace(/[- :]/g, '').slice(0, 12) + '.csv';
+    document.body.append(a); a.click(); a.remove();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  };
+
+  function parseCSV(text) {
+    text = text.replace(/^﻿/, '');
+    var rows = [], row = [], cell = '', q = false;
+    for (var i = 0; i < text.length; i++) {
+      var c = text[i];
+      if (q) {
+        if (c === '"') {
+          if (text[i + 1] === '"') { cell += '"'; i++; } else { q = false; }
+        } else { cell += c; }
+      } else if (c === '"') { q = true; }
+      else if (c === ',') { row.push(cell); cell = ''; }
+      else if (c === '\n' || c === '\r') {
+        if (c === '\r' && text[i + 1] === '\n') i++;
+        row.push(cell); rows.push(row); row = []; cell = '';
+      } else { cell += c; }
+    }
+    if (cell !== '' || row.length) { row.push(cell); rows.push(row); }
+    return rows.filter(function (r) { return r.some(function (x) { return x.trim() !== ''; }); });
+  }
+
+  $('inv-import-btn').onclick = function () { $('inv-import').click(); };
+
+  $('inv-import').onchange = function (e) {
+    var file = e.target.files && e.target.files[0];
+    if (!file) return;
+    var reader = new FileReader();
+    reader.onload = function () {
+      var rows = parseCSV(String(reader.result));
+      if (rows.length < 2) { alert('這個 CSV 沒有可讀的資料列。'); $('inv-import').value = ''; return; }
+      var merge = items.length
+        ? confirm('要跟現有的 ' + items.length + ' 筆資料合併嗎？\n\n【確定】合併（相同品項數量相加）\n【取消】清掉現有資料，只留 CSV 內容')
+        : true;
+      if (!merge) items = [];
+
+      var added = 0, merged = 0;
+      rows.slice(1).forEach(function (r) {
+        var cat = (r[0] || '其他').trim();
+        var name = (r[1] || '').trim();
+        if (!name) return;
+        var spec = (r[2] || '').trim();
+        var qty = Number((r[3] || '0').trim()); if (!isFinite(qty)) qty = 0;
+        var unit = (r[4] || '').trim();
+        var note = (r[5] || '').trim();
+        var updated = (r[6] || '').trim() || now();
+
+        var hit = items.find(function (x) { return same(x, cat, name, spec); });
+        if (hit) {
+          hit.qty = Math.max(0, (Number(hit.qty) || 0) + qty);
+          if (unit) hit.unit = unit;
+          if (note) hit.note = note;
+          hit.updated = updated;
+          merged++;
+        } else {
+          items.push({
+            id: 'i' + Date.now() + Math.random().toString(36).slice(2, 7),
+            cat: cat, name: name, spec: spec, qty: Math.max(0, qty),
+            unit: unit, note: note, updated: updated
+          });
+          added++;
+        }
+      });
+      save(); render();
+      alert('匯入完成：新增 ' + added + ' 筆、累加 ' + merged + ' 筆。');
+      $('inv-import').value = '';
+    };
+    reader.onerror = function () { alert('讀取檔案失敗。'); $('inv-import').value = ''; };
+    reader.readAsText(file, 'UTF-8');
+  };
+
+  load();
+  render();
+})();
+</script>
 
 </body>
 </html>
