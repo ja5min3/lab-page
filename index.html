@@ -5,251 +5,500 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>先進顯微鏡技術實驗室 · 內部知識庫</title>
 <style>
+  /* ===========================================================
+     設計語言：這個實驗室的知識幾乎都是「量」——調平 0.08–0.1mm、
+     廢液桶 50–80% 滿、單桶 20 公升、紀錄留存 3 年。因此：
+       · 等寬字只給數字、單位、規格用；中文敘述走黑體
+       · 每個區塊標題下掛一條「標尺」，右側標出這區真正的量
+     配色：深海軍藍。零外部字型與資源，維持單檔可離線。
+     =========================================================== */
   :root {
-    --bg: #f4f6f8;
-    --card: #ffffff;
-    --ink: #1f2933;
-    --sub: #616e7c;
-    --accent: #0e7c86;
-    --accent-soft: #e0f2f3;
-    --warn: #b7791f;
-    --warn-soft: #fdf3e0;
-    --line: #e4e9ee;
-    --radius: 14px;
+    --navy-900: #0F2647;
+    --navy-700: #17376B;
+    --navy-500: #2E6BD6;
+    --navy-100: #EAF0FA;
+    --paper:    #F7F9FC;
+    --card:     #FFFFFF;
+    --ink:      #16202E;
+    --ink-sub:  #5A6B85;
+    --line:     #DDE5F0;
+    --warn:     #A45B0B;
+    --warn-soft:#FBF0E0;
+    --warn-line:#E8C79A;
+    --danger:   #B3261E;
+    --radius:   12px;
+    --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono", monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { font-size: 18px; }  /* 放大整體字級，讓網頁好讀（原本用瀏覽器預設 16px 偏小） */
+  html { font-size: 18px; }
   body {
     font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
-    background: var(--bg); color: var(--ink); line-height: 1.7;
+    background: var(--paper); color: var(--ink); line-height: 1.75;
+    -webkit-text-size-adjust: 100%;
   }
-  header {
-    background: linear-gradient(135deg, #0e7c86 0%, #14919b 60%, #1aa6b0 100%);
-    color: #fff; padding: 40px 24px 32px;
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 0 20px; }
+
+  /* 所有「量」用等寬字：數字、單位、規格、統計 */
+  .q, .mono { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+  /* 中英混排時等寬字緊貼中文會糊在一起，補一點間隙 */
+  .q { font-weight: 600; color: var(--navy-700); font-size: .94em; margin: 0 .12em; }
+
+  a { color: var(--navy-500); }
+  :focus-visible {
+    outline: 2px solid var(--navy-500); outline-offset: 2px; border-radius: 4px;
   }
-  .wrap { max-width: 1000px; margin: 0 auto; }
-  header h1 { font-size: 1.7rem; letter-spacing: .05em; }
-  header p { opacity: .92; margin-top: 6px; font-size: .95rem; }
+
+  /* ===== 頁首 ===== */
+  .masthead { background: var(--navy-900); color: #fff; }
+  .masthead .wrap {
+    display: flex; align-items: baseline; justify-content: space-between;
+    gap: 16px; padding-top: 16px; padding-bottom: 16px; flex-wrap: wrap;
+  }
+  .masthead__name {
+    font-size: 1rem; font-weight: 700; letter-spacing: .04em;
+    text-decoration: none; color: #fff;
+  }
+  .masthead__meta {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .08em;
+    color: #9DB6DC; text-transform: uppercase;
+  }
+
+  /* ===== 導覽 ===== */
   nav {
-    position: sticky; top: 0; z-index: 10;
-    background: rgba(255,255,255,.95); backdrop-filter: blur(6px);
+    position: sticky; top: 0; z-index: 20;
+    background: rgba(255,255,255,.94); backdrop-filter: blur(8px);
     border-bottom: 1px solid var(--line);
   }
-  nav .wrap { display: flex; gap: 4px; overflow-x: auto; padding: 0 16px; }
+  nav .wrap { display: flex; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+  nav .wrap::-webkit-scrollbar { display: none; }
   nav a {
-    padding: 12px 14px; text-decoration: none; color: var(--sub);
-    font-size: .92rem; white-space: nowrap; border-bottom: 2px solid transparent;
+    padding: 13px 13px 11px; text-decoration: none; color: var(--ink-sub);
+    font-size: .84rem; white-space: nowrap; border-bottom: 2px solid transparent;
   }
-  nav a:hover { color: var(--accent); border-bottom-color: var(--accent); }
-  main { padding: 28px 16px 60px; }
-  section { margin-bottom: 36px; scroll-margin-top: 60px; }
-  h2 {
-    font-size: 1.2rem; margin-bottom: 14px; color: var(--accent);
-    display: flex; align-items: center; gap: 8px;
+  nav a:hover { color: var(--navy-700); }
+  nav a.is-current { color: var(--navy-700); font-weight: 700; border-bottom-color: var(--navy-500); }
+
+  main { padding: 34px 0 72px; }
+
+  /* ===== 路由：JS 啟動後才隱藏非當前分頁。沒有 JS 就退回長捲頁 ===== */
+  .page { display: block; }
+  body.routed .page { display: none; }
+  body.routed .page.is-active { display: block; animation: rise .12s ease-out; }
+  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+
+  /* ===== 標題與標尺（本頁的簽名元素）===== */
+  .ptitle {
+    font-size: 1.5rem; font-weight: 700; letter-spacing: -.01em;
+    color: var(--navy-900); line-height: 1.35;
   }
-  h3 { font-size: 1.02rem; margin-bottom: 10px; }
-  .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 16px; }
+  .scalebar { display: flex; align-items: center; gap: 12px; margin: 12px 0 26px; }
+  .scalebar__bar {
+    flex: none; width: 68px; height: 8px;
+    border: 2px solid var(--navy-500); border-top: 0;
+  }
+  .scalebar__meta {
+    font-family: var(--mono); font-size: .72rem; letter-spacing: .03em;
+    color: var(--ink-sub); white-space: nowrap;
+  }
+  .scalebar__rule { flex: 1; height: 1px; background: var(--line); min-width: 0; }
+
+  .backlink {
+    display: inline-block; margin-bottom: 14px; font-size: .82rem;
+    font-weight: 600; text-decoration: none; color: var(--navy-500);
+  }
+  .backlink:hover { text-decoration: underline; }
+
+  /* ===== 首頁 ===== */
+  .hero { margin-bottom: 34px; }
+  .hero h1 {
+    font-size: 1.85rem; font-weight: 700; letter-spacing: -.015em;
+    color: var(--navy-900); margin: 0 0 8px; line-height: 1.3;
+  }
+  .hero p { color: var(--ink-sub); font-size: .92rem; max-width: 46em; }
+
+  .entries { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .entry {
+    display: flex; flex-direction: column; gap: 5px;
+    background: var(--card); border: 1px solid var(--line);
+    border-radius: var(--radius); padding: 18px 20px 20px;
+    text-decoration: none; color: inherit;
+    transition: border-color .15s, box-shadow .15s, transform .15s;
+  }
+  .entry:hover {
+    border-color: var(--navy-500); transform: translateY(-2px);
+    box-shadow: 0 6px 18px rgba(15,38,71,.09);
+  }
+  .entry__meta {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .03em;
+    color: var(--navy-500); text-transform: uppercase;
+  }
+  .entry__title { font-size: 1.04rem; font-weight: 700; color: var(--navy-900); }
+  .entry__desc { font-size: .84rem; color: var(--ink-sub); line-height: 1.65; }
+
+  /* ===== 卡片 ===== */
+  .grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+  .grid--2 { grid-template-columns: repeat(2, 1fr); }
   .card {
+    display: flex; flex-direction: column;
     background: var(--card); border: 1px solid var(--line);
     border-radius: var(--radius); padding: 20px 22px;
-    box-shadow: 0 1px 3px rgba(31,41,51,.06);
     overflow-x: auto;
   }
-  .card p, .card li { font-size: .92rem; color: var(--ink); }
-  .card ul, .card ol { padding-left: 20px; }
-  .tag {
-    display: inline-block; font-size: .75rem; padding: 2px 10px;
-    border-radius: 99px; background: var(--accent-soft); color: var(--accent);
-    margin-left: 6px; vertical-align: middle; font-weight: 600;
+  .card + .card, .card + .grid, .grid + .card, .card + .note, .note + .card { margin-top: 16px; }
+  .card h3 {
+    font-size: .98rem; font-weight: 700; color: var(--navy-900);
+    margin-bottom: 10px; letter-spacing: -.005em;
   }
-  .tag.warn { background: var(--warn-soft); color: var(--warn); }
-  table { width: 100%; border-collapse: collapse; font-size: .9rem; max-width: 100%; }
-  th, td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--line); }
-  th { color: var(--sub); font-weight: 600; font-size: .82rem; }
-  .callout {
-    border-left: 4px solid var(--warn); background: var(--warn-soft);
-    padding: 12px 16px; border-radius: 0 10px 10px 0; font-size: .92rem; margin-top: 12px;
-  }
-  .callout.info { border-left-color: var(--accent); background: var(--accent-soft); }
-  footer { text-align: center; color: var(--sub); font-size: .82rem; padding: 24px; border-top: 1px solid var(--line); }
-  .steps li { margin-bottom: 4px; }
-  a.golink { color: var(--accent); font-weight: 600; text-decoration: none; }
-  a.golink:hover { text-decoration: underline; }
-  .morebtn {
-    display: inline-block; margin-top: 10px; padding: 6px 16px;
-    background: var(--accent); color: #fff; border-radius: 99px;
-    font-size: .85rem; text-decoration: none; font-weight: 600;
-  }
-  .morebtn:hover { opacity: .88; }
+  .card p, .card li { font-size: .9rem; }
+  .card ul, .card ol { padding-left: 1.2em; }
+  .card li { margin-bottom: 3px; }
+  .card li::marker { color: var(--ink-sub); }
 
-  /* ===== 詳細頁（點擊展開的子頁面，純 CSS :target 實作） ===== */
-  .detail { display: none; }
-  .detail:target {
-    display: block; position: fixed; inset: 0; z-index: 50;
-    overflow-y: auto; background: var(--bg);
-    padding: 20px 16px 80px;
+  /* 這一區真正的操作重點 */
+  .card--key { border-left: 3px solid var(--navy-500); }
+  .card--key .keyline {
+    font-family: var(--mono); font-size: 1.15rem; font-weight: 700;
+    color: var(--navy-700); letter-spacing: -.01em; display: block; margin-bottom: 4px;
   }
-  .detail .wrap { max-width: 800px; }
-  .backbar {
-    position: sticky; top: 0; z-index: 5; margin: -20px -16px 18px;
-    background: rgba(244,246,248,.95); backdrop-filter: blur(6px);
-    border-bottom: 1px solid var(--line); padding: 12px 16px;
+
+  /* ===== 提示：預設安靜的藍，只有真的有風險才用琥珀 ===== */
+  .note {
+    border-left: 3px solid var(--navy-500); background: var(--navy-100);
+    padding: 13px 17px; border-radius: 0 10px 10px 0; font-size: .88rem;
   }
-  .backbar a {
-    color: var(--accent); text-decoration: none; font-weight: 700; font-size: .95rem;
+  .note--risk { border-left-color: var(--warn); background: var(--warn-soft); }
+  .note--risk strong { color: var(--warn); }
+
+  /* ===== 表格 ===== */
+  table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+  th {
+    text-align: left; padding: 7px 10px 7px 0;
+    font-family: var(--mono); font-size: .68rem; font-weight: 600;
+    letter-spacing: .06em; text-transform: uppercase; color: var(--ink-sub);
+    border-bottom: 1.5px solid var(--navy-100); white-space: nowrap;
   }
-  .detail h2 { margin-top: 4px; }
-  .detail .card { margin-bottom: 14px; }
+  td { padding: 9px 10px 9px 0; border-bottom: 1px solid var(--line); vertical-align: top; }
+  tr:last-child td { border-bottom: 0; }
+  th:last-child, td:last-child { padding-right: 0; }
+
+  .pill {
+    display: inline-block; font-family: var(--mono); font-size: .68rem;
+    padding: 1px 8px; border-radius: 4px; font-weight: 600;
+    background: var(--navy-100); color: var(--navy-700); white-space: nowrap;
+  }
+  .pill--risk { background: var(--warn-soft); color: var(--warn); }
+
+  .golink { color: var(--navy-500); font-weight: 700; text-decoration: none; }
+  .golink:hover { text-decoration: underline; }
+  .morebtn {
+    display: inline-block; margin-top: auto; padding-top: 12px;
+    font-size: .84rem; font-weight: 700; text-decoration: none; color: var(--navy-500);
+  }
+  .morebtn:hover { text-decoration: underline; }
+  .muted { color: var(--ink-sub); font-size: .8rem; }
+
+  footer {
+    border-top: 1px solid var(--line); padding: 22px 0;
+    text-align: center; color: var(--ink-sub);
+    font-family: var(--mono); font-size: .7rem; letter-spacing: .04em;
+  }
 
   /* ===== 耗材盤點 ===== */
   .inv-form {
     display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-    gap: 10px; align-items: end;
+    gap: 11px; align-items: end;
   }
-  .inv-field { display: flex; flex-direction: column; gap: 4px; }
+  .inv-field { display: flex; flex-direction: column; gap: 5px; }
   .inv-form .full { grid-column: 1 / -1; }
-  .inv-field label { font-size: .78rem; color: var(--sub); font-weight: 600; }
+  .inv-field label {
+    font-family: var(--mono); font-size: .68rem; letter-spacing: .05em;
+    color: var(--ink-sub); text-transform: uppercase;
+  }
   .inv-form input, .inv-form select, .inv-tools input, .inv-tools select {
-    font-family: inherit; font-size: .9rem; color: var(--ink);
-    padding: 7px 10px; border: 1px solid var(--line);
+    font-family: inherit; font-size: .88rem; color: var(--ink);
+    padding: 8px 10px; border: 1px solid var(--line);
     border-radius: 8px; background: #fff; width: 100%;
   }
   .inv-form input:focus, .inv-form select:focus,
   .inv-tools input:focus, .inv-tools select:focus {
-    outline: none; border-color: var(--accent);
+    outline: none; border-color: var(--navy-500);
+    box-shadow: 0 0 0 3px rgba(46,107,214,.14);
   }
   .btn {
-    font-family: inherit; font-size: .88rem; font-weight: 600;
-    padding: 8px 16px; border: 1px solid var(--accent);
-    border-radius: 99px; background: var(--accent); color: #fff; cursor: pointer;
+    font-family: inherit; font-size: .86rem; font-weight: 700;
+    padding: 9px 18px; border: 1px solid var(--navy-500);
+    border-radius: 8px; background: var(--navy-500); color: #fff; cursor: pointer;
     white-space: nowrap;
   }
-  .btn:hover { opacity: .88; }
-  .btn.ghost { background: #fff; color: var(--accent); }
-  .btn.danger { background: #fff; color: #b3261e; border-color: #e6c9c6; }
-  .inv-tools {
-    display: flex; flex-wrap: wrap; gap: 10px; align-items: center;
-    margin-bottom: 12px;
-  }
+  .btn:hover { background: var(--navy-700); border-color: var(--navy-700); }
+  .btn.ghost { background: #fff; color: var(--navy-500); }
+  .btn.ghost:hover { background: var(--navy-100); color: var(--navy-700); }
+  .btn.danger { background: #fff; color: var(--danger); border-color: #E6C9C6; }
+  .btn.danger:hover { background: #FCF2F1; border-color: var(--danger); }
+  .inv-tools { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 14px; }
   .inv-tools .grow { flex: 1 1 180px; min-width: 140px; }
   .inv-tools .spacer { flex: 1 1 auto; }
+
   #inv-table { min-width: 640px; }   /* 欄位多，窄螢幕改成卡片內橫向捲動，不要擠成一團 */
   #inv-table td { vertical-align: middle; }
   #inv-table .num {
-    font-variant-numeric: tabular-nums; font-weight: 700; font-size: 1rem;
-    white-space: nowrap; min-width: 3.4em; text-align: center;
+    font-family: var(--mono); font-variant-numeric: tabular-nums;
+    font-weight: 700; font-size: .95rem; color: var(--navy-700);
+    white-space: nowrap; min-width: 3.6em; text-align: center;
   }
   .qty-cell { display: flex; align-items: center; gap: 6px; }
   .stepper {
     font-family: inherit; width: 26px; height: 26px; line-height: 1;
-    border: 1px solid var(--line); background: #fff; color: var(--sub);
+    border: 1px solid var(--line); background: #fff; color: var(--ink-sub);
     border-radius: 7px; cursor: pointer; font-size: .95rem; flex: none;
   }
-  .stepper:hover { border-color: var(--accent); color: var(--accent); }
-  .rowact { display: flex; gap: 6px; }
+  .stepper:hover { border-color: var(--navy-500); color: var(--navy-500); background: var(--navy-100); }
+  .rowact { display: flex; gap: 8px; }
   .linkbtn {
     font-family: inherit; background: none; border: none; padding: 0;
-    color: var(--accent); font-size: .82rem; cursor: pointer; font-weight: 600;
+    color: var(--navy-500); font-size: .8rem; cursor: pointer; font-weight: 700;
   }
   .linkbtn:hover { text-decoration: underline; }
-  .linkbtn.del { color: #b3261e; }
+  .linkbtn.del { color: var(--danger); }
   .cat-pill {
-    display: inline-block; font-size: .74rem; padding: 2px 9px; border-radius: 99px;
-    background: var(--accent-soft); color: var(--accent); font-weight: 600; white-space: nowrap;
+    display: inline-block; font-family: var(--mono); font-size: .68rem;
+    padding: 1px 8px; border-radius: 4px; font-weight: 600;
+    background: var(--navy-100); color: var(--navy-700); white-space: nowrap;
   }
-  .muted { color: var(--sub); font-size: .82rem; }
-  .inv-empty { text-align: center; color: var(--sub); font-size: .9rem; padding: 22px 8px; }
+  .inv-empty { text-align: center; color: var(--ink-sub); font-size: .88rem; padding: 26px 8px; }
   .editing { background: var(--warn-soft); }
 
-  @media (max-width: 600px) {
+  @media (max-width: 900px) {
+    .entries, .grid, .grid--2 { grid-template-columns: repeat(2, 1fr); }
+  }
+  @media (max-width: 620px) {
+    .wrap { padding: 0 14px; }
+    main { padding: 24px 0 48px; }
+    .entries, .grid, .grid--2 { grid-template-columns: 1fr; gap: 12px; }
+    .hero h1 { font-size: 1.42rem; }
+    .ptitle { font-size: 1.22rem; }
+    .card { padding: 16px 17px; }
+    .scalebar { margin: 10px 0 20px; }
+    .scalebar__meta { white-space: normal; }
     .inv-form { grid-template-columns: 1fr 1fr; }
-    header { padding: 26px 16px 20px; }
-    header h1 { font-size: 1.3rem; }
-    header p { font-size: .82rem; }
-    main { padding: 18px 12px 40px; }
-    .cards { grid-template-columns: 1fr; gap: 12px; }
-    .card { padding: 15px 16px; }
-    h2 { font-size: 1.08rem; }
-    table { font-size: .82rem; }
-    th, td { padding: 6px 6px; }
-    nav a { padding: 10px 10px; font-size: .86rem; }
-    .callout { font-size: .86rem; padding: 10px 12px; }
+    nav a { padding: 12px 10px 10px; font-size: .8rem; }
+    table { font-size: .84rem; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation: none !important; transition: none !important; }
+    .entry:hover { transform: none; }
   }
 </style>
 </head>
 <body>
 
-<header id="top">
+<header class="masthead">
   <div class="wrap">
-    <h1>🔬 先進顯微鏡技術實驗室</h1>
-    <p>內部知識庫 · 化306-1 · 明志科技大學化工系 · 指導教授：杜鶴芸</p>
+    <a class="masthead__name" href="#home">先進顯微鏡技術實驗室</a>
+    <span class="masthead__meta">化306-1 · 明志科大化工系</span>
   </div>
 </header>
 
 <nav><div class="wrap">
-  <a href="#print">3D 列印區</a>
-  <a href="#inventory">耗材盤點</a>
-  <a href="#safety">安全與檢查</a>
-  <a href="#waste">廢液處理</a>
-  <a href="#buy">採購報帳</a>
-  <a href="#members">成員</a>
-  <a href="#rules">其他規則</a>
+  <a href="#home" data-nav="home">首頁</a>
+  <a href="#print" data-nav="print">3D 列印區</a>
+  <a href="#inventory" data-nav="inventory">耗材盤點</a>
+  <a href="#safety" data-nav="safety">安全與檢查</a>
+  <a href="#waste" data-nav="waste">廢液處理</a>
+  <a href="#buy" data-nav="buy">採購報帳</a>
+  <a href="#members" data-nav="members">成員</a>
+  <a href="#rules" data-nav="rules">其他規則</a>
 </div></nav>
 
-<main class="wrap">
+<main>
 
-  <section id="print">
-    <h2>🖨️ 3D 列印區 <span class="tag">點機器名稱看操作步驟</span></h2>
-    <div class="card" style="margin-bottom:16px">
-      <table>
-        <tr><th>機器</th><th>類型</th><th>定位</th><th>使用資格</th></tr>
-        <tr><td><a class="golink" href="#d-h2d">Bambu Lab H2D →</a></td><td>FDM</td><td>主力機</td><td>需登記</td></tr>
-        <tr><td><a class="golink" href="#d-ender">Creality Ender 3 S1 →</a></td><td>FDM</td><td>備用機</td><td>需受訓 <span class="tag warn">手動調平</span></td></tr>
-        <tr><td><a class="golink" href="#d-s050">San Draw S050 →</a></td><td>矽膠列印</td><td>矽膠件專用</td><td>需受訓 <span class="tag warn">流程特殊</span></td></tr>
-      </table>
-      <div class="callout info">
-        <strong>登記規則：</strong>使用<strong>前</strong>填機器旁紙本；塑膠機使用<strong>後</strong>掃紙本上的 QR 填 Google 表單。<br>
-        <strong>傳檔規定：</strong>H2D 盡量不聯網，用<strong>隨身碟</strong>傳檔。
+  <!-- ===================== 首頁 ===================== -->
+  <section class="page is-active" id="home" data-nav="home">
+    <div class="wrap">
+      <div class="hero">
+        <h1>實驗室內部知識庫</h1>
+        <p>機器怎麼開、東西壞了怎麼救、表要交去哪、耗材還剩幾捲。指導教授：杜鶴芸。</p>
       </div>
-    </div>
-    <div class="cards">
-      <div class="card">
-        <h3>🩹 第一層黏不住／翹曲急救</h3>
-        <ol class="steps">
-          <li>中性洗碗精洗打印板——<strong>紋理板可用菜瓜布，光面板只能用海綿</strong></li>
-          <li>上膠水／平台膠</li>
-          <li>改切片設定（加 brim、調溫度）</li>
-        </ol>
-      </div>
-      <div class="card">
-        <h3>🎓 使用考核（草案）</h3>
-        <ul>
-          <li><strong>Lv.1</strong>：H2D</li>
-          <li><strong>Lv.2</strong>：＋Ender</li>
-          <li><strong>Lv.3</strong>：＋矽膠機</li>
-        </ul>
-        <a class="morebtn" href="#d-exam">看考核內容 →</a>
-      </div>
-      <div class="card">
-        <h3>📚 官方資源</h3>
-        <ul>
-          <li><a href="https://wiki.bambulab.com">Bambu Lab Wiki</a>——H2D 教學與故障排除</li>
-          <li><a href="https://www.youtube.com/watch?v=HKKYj6frskE">San Draw YouTube</a>——矽膠機操作教程</li>
-          <li>Ender 原廠手冊——實驗室知識庫內有 PDF</li>
-        </ul>
+
+      <div class="entries">
+        <a class="entry" href="#print">
+          <span class="entry__meta">3 台機器 · 2 台需受訓</span>
+          <span class="entry__title">3D 列印區</span>
+          <span class="entry__desc">三台機器的操作步驟、登記規則、第一層黏不住怎麼救</span>
+        </a>
+        <a class="entry" href="#inventory">
+          <span class="entry__meta" id="home-inv-meta">尚未建立</span>
+          <span class="entry__title">耗材盤點</span>
+          <span class="entry__desc">線材、噴頭與其他耗材的入庫與領用，可匯出 CSV 備份</span>
+        </a>
+        <a class="entry" href="#safety">
+          <span class="entry__meta">每學期 8 項自主檢查</span>
+          <span class="entry__title">安全與檢查</span>
+          <span class="entry__desc">環安室與消防檢查的年度規律，開學要自己做的八項</span>
+        </a>
+        <a class="entry" href="#waste">
+          <span class="entry__meta">桶滿 50–80% 就要報清運</span>
+          <span class="entry__title">廢液處理</span>
+          <span class="entry__desc">有機無機怎麼分、桶子多滿要申請清運</span>
+        </a>
+        <a class="entry" href="#buy">
+          <span class="entry__meta">3 種採購流程</span>
+          <span class="entry__title">採購與報帳</span>
+          <span class="entry__desc">藥品、矽膠、塑膠耗材各走各的路；到貨一律拍照</span>
+        </a>
+        <a class="entry" href="#members">
+          <span class="entry__meta">6 位成員</span>
+          <span class="entry__title">成員</span>
+          <span class="entry__desc">誰做什麼題目、找誰問哪件事</span>
+        </a>
+        <a class="entry" href="#rules">
+          <span class="entry__meta">值日 · 數據 · 新生</span>
+          <span class="entry__title">其他規則</span>
+          <span class="entry__desc">輪值範圍、檔案存哪裡、新生報到第一步</span>
+        </a>
       </div>
     </div>
   </section>
 
-  <section id="inventory">
-    <h2>📦 耗材盤點 <span class="tag">存在本機瀏覽器</span></h2>
+  <!-- ===================== 3D 列印區 ===================== -->
+  <section class="page" id="print" data-nav="print">
+    <div class="wrap">
+      <h1 class="ptitle">3D 列印區</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">3 台機器 · 2 台需受訓</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
 
-    <div class="card" style="margin-bottom:16px">
-      <h3>新增／入庫</h3>
-      <form class="inv-form" id="inv-form" autocomplete="off">
-        <div class="inv-field">
-          <label for="inv-cat">類別</label>
-          <select id="inv-cat">
+      <div class="card">
+        <table>
+          <tr><th>機器</th><th>類型</th><th>定位</th><th>使用資格</th></tr>
+          <tr>
+            <td><a class="golink" href="#d-h2d">Bambu Lab H2D →</a></td>
+            <td>FDM</td><td>主力機</td><td>需登記</td>
+          </tr>
+          <tr>
+            <td><a class="golink" href="#d-ender">Creality Ender 3 S1 →</a></td>
+            <td>FDM</td><td>備用機</td>
+            <td>需受訓 <span class="pill pill--risk">手動調平</span></td>
+          </tr>
+          <tr>
+            <td><a class="golink" href="#d-s050">San Draw S050 →</a></td>
+            <td>矽膠列印</td><td>矽膠件專用</td>
+            <td>需受訓 <span class="pill pill--risk">流程特殊</span></td>
+          </tr>
+        </table>
+      </div>
+
+      <div class="note">
+        <strong>登記規則：</strong>使用<strong>前</strong>填機器旁紙本；塑膠機使用<strong>後</strong>掃紙本上的 QR 填 Google 表單。<br>
+        <strong>傳檔規定：</strong>H2D 盡量不聯網，用<strong>隨身碟</strong>傳檔。
+      </div>
+
+      <div class="grid" style="margin-top:16px">
+        <div class="card card--key">
+          <h3>第一層黏不住／翹曲急救</h3>
+          <ol>
+            <li>中性洗碗精洗打印板——<strong>紋理板可用菜瓜布，光面板只能用海綿</strong></li>
+            <li>上膠水／平台膠</li>
+            <li>改切片設定（加 brim、調溫度）</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>使用考核（草案）</h3>
+          <ul>
+            <li><span class="q">Lv.1</span>　H2D</li>
+            <li><span class="q">Lv.2</span>　＋Ender</li>
+            <li><span class="q">Lv.3</span>　＋矽膠機</li>
+          </ul>
+          <a class="morebtn" href="#d-exam">看考核內容 →</a>
+        </div>
+        <div class="card">
+          <h3>官方資源</h3>
+          <ul>
+            <li><a href="https://wiki.bambulab.com">Bambu Lab Wiki</a>——H2D 教學與故障排除</li>
+            <li><a href="https://www.youtube.com/watch?v=HKKYj6frskE">San Draw YouTube</a>——矽膠機操作教程</li>
+            <li>Ender 原廠手冊——實驗室知識庫內有 PDF</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 耗材盤點 ===================== -->
+  <section class="page" id="inventory" data-nav="inventory">
+    <div class="wrap">
+      <h1 class="ptitle">耗材盤點</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta"><span id="inv-meta">尚未建立</span> · 存本機瀏覽器</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="card">
+        <h3>新增／入庫</h3>
+        <form class="inv-form" id="inv-form" autocomplete="off">
+          <div class="inv-field">
+            <label for="inv-cat">類別</label>
+            <select id="inv-cat">
+              <option value="線材">線材</option>
+              <option value="矽膠料">矽膠料</option>
+              <option value="噴頭">噴頭</option>
+              <option value="列印板">列印板</option>
+              <option value="零件耗材">零件耗材</option>
+              <option value="其他">其他</option>
+            </select>
+          </div>
+          <div class="inv-field">
+            <label for="inv-name">品項／材料</label>
+            <input id="inv-name" list="inv-name-list" placeholder="例：PLA" required>
+            <datalist id="inv-name-list">
+              <option value="PLA"><option value="PETG"><option value="ABS"><option value="ASA">
+              <option value="TPU"><option value="SIL28"><option value="SIL18">
+              <option value="黃銅噴頭"><option value="硬化鋼噴頭"><option value="矽膠噴頭">
+              <option value="紋理板"><option value="光面板"><option value="平台膠水">
+            </datalist>
+          </div>
+          <div class="inv-field">
+            <label for="inv-spec">顏色／規格</label>
+            <input id="inv-spec" list="inv-spec-list" placeholder="例：紅色 / 0.4mm">
+            <datalist id="inv-spec-list">
+              <option value="黑色"><option value="白色"><option value="紅色"><option value="藍色">
+              <option value="灰色"><option value="透明">
+              <option value="0.2mm"><option value="0.4mm"><option value="0.6mm"><option value="0.8mm">
+            </datalist>
+          </div>
+          <div class="inv-field">
+            <label for="inv-qty">數量</label>
+            <input id="inv-qty" type="number" step="any" value="1" required>
+          </div>
+          <div class="inv-field">
+            <label for="inv-unit">單位</label>
+            <input id="inv-unit" list="inv-unit-list" placeholder="捲" value="捲">
+            <datalist id="inv-unit-list">
+              <option value="捲"><option value="個"><option value="條"><option value="盒">
+              <option value="瓶"><option value="包"><option value="組"><option value="公克">
+            </datalist>
+          </div>
+          <div class="inv-field full">
+            <label for="inv-note">備註（品牌、放置位置…）</label>
+            <input id="inv-note" placeholder="例：Bambu 原廠，防潮箱第二層">
+          </div>
+          <div class="inv-field full" style="flex-direction:row;gap:8px">
+            <button class="btn" type="submit" id="inv-submit">新增／累加</button>
+            <button class="btn ghost" type="button" id="inv-cancel" hidden>取消編輯</button>
+          </div>
+        </form>
+        <p class="muted" style="margin-top:12px">
+          類別＋品項＋顏色規格完全相同時會<strong>自動累加數量</strong>，不會重複開一列。
+        </p>
+      </div>
+
+      <div class="card">
+        <div class="inv-tools">
+          <input id="inv-search" class="grow" type="search" placeholder="搜尋品項／顏色／備註">
+          <select id="inv-filter" style="width:auto">
+            <option value="">全部類別</option>
             <option value="線材">線材</option>
             <option value="矽膠料">矽膠料</option>
             <option value="噴頭">噴頭</option>
@@ -257,357 +506,463 @@
             <option value="零件耗材">零件耗材</option>
             <option value="其他">其他</option>
           </select>
+          <span class="spacer"></span>
+          <button class="btn ghost" type="button" id="inv-export">匯出 CSV</button>
+          <button class="btn ghost" type="button" id="inv-import-btn">匯入 CSV</button>
+          <input type="file" id="inv-import" accept=".csv,text/csv" hidden>
+          <button class="btn danger" type="button" id="inv-clear">清空</button>
         </div>
-        <div class="inv-field">
-          <label for="inv-name">品項／材料</label>
-          <input id="inv-name" list="inv-name-list" placeholder="例：PLA" required>
-          <datalist id="inv-name-list">
-            <option value="PLA"><option value="PETG"><option value="ABS"><option value="ASA">
-            <option value="TPU"><option value="SIL28"><option value="SIL18">
-            <option value="黃銅噴頭"><option value="硬化鋼噴頭"><option value="矽膠噴頭">
-            <option value="紋理板"><option value="光面板"><option value="平台膠水">
-          </datalist>
-        </div>
-        <div class="inv-field">
-          <label for="inv-spec">顏色／規格</label>
-          <input id="inv-spec" list="inv-spec-list" placeholder="例：紅色 / 0.4mm">
-          <datalist id="inv-spec-list">
-            <option value="黑色"><option value="白色"><option value="紅色"><option value="藍色">
-            <option value="灰色"><option value="透明">
-            <option value="0.2mm"><option value="0.4mm"><option value="0.6mm"><option value="0.8mm">
-          </datalist>
-        </div>
-        <div class="inv-field">
-          <label for="inv-qty">數量</label>
-          <input id="inv-qty" type="number" step="any" value="1" required>
-        </div>
-        <div class="inv-field">
-          <label for="inv-unit">單位</label>
-          <input id="inv-unit" list="inv-unit-list" placeholder="捲" value="捲">
-          <datalist id="inv-unit-list">
-            <option value="捲"><option value="個"><option value="條"><option value="盒">
-            <option value="瓶"><option value="包"><option value="組"><option value="公克">
-          </datalist>
-        </div>
-        <div class="inv-field full">
-          <label for="inv-note">備註（品牌、放置位置…）</label>
-          <input id="inv-note" placeholder="例：Bambu 原廠，防潮箱第二層">
-        </div>
-        <div class="inv-field full" style="flex-direction:row;gap:8px">
-          <button class="btn" type="submit" id="inv-submit">新增／累加</button>
-          <button class="btn ghost" type="button" id="inv-cancel" hidden>取消編輯</button>
-        </div>
-      </form>
-      <p class="muted" style="margin-top:10px">
-        類別＋品項＋顏色規格完全相同時會<strong>自動累加數量</strong>，不會重複開一列。
-      </p>
-    </div>
 
-    <div class="card">
-      <div class="inv-tools">
-        <input id="inv-search" class="grow" type="search" placeholder="🔍 搜尋品項／顏色／備註">
-        <select id="inv-filter" style="width:auto">
-          <option value="">全部類別</option>
-          <option value="線材">線材</option>
-          <option value="矽膠料">矽膠料</option>
-          <option value="噴頭">噴頭</option>
-          <option value="列印板">列印板</option>
-          <option value="零件耗材">零件耗材</option>
-          <option value="其他">其他</option>
-        </select>
-        <span class="spacer"></span>
-        <button class="btn ghost" type="button" id="inv-export">⬇ 匯出 CSV</button>
-        <button class="btn ghost" type="button" id="inv-import-btn">⬆ 匯入 CSV</button>
-        <input type="file" id="inv-import" accept=".csv,text/csv" hidden>
-        <button class="btn danger" type="button" id="inv-clear">清空</button>
-      </div>
-
-      <table id="inv-table">
-        <thead>
-          <tr>
-            <th>類別</th><th>品項</th><th>顏色／規格</th><th>數量</th>
-            <th>備註</th><th>最後更新</th><th></th>
-          </tr>
-        </thead>
-        <tbody id="inv-body"></tbody>
-      </table>
-      <p class="inv-empty" id="inv-empty" hidden>目前沒有資料，用上面的表單新增第一筆吧。</p>
-      <p class="muted" id="inv-summary" style="margin-top:10px"></p>
-    </div>
-
-    <div class="callout">
-      <strong>資料存在哪裡：</strong>這個頁面沒有伺服器，盤點資料存在<strong>你這台電腦的瀏覽器</strong>裡（localStorage），
-      只有在這個瀏覽器、這個網址看得到。換電腦、換人接手或要備份，請按<strong>匯出 CSV</strong> 存檔，
-      到新的地方再用<strong>匯入 CSV</strong> 讀回來。清除瀏覽器資料會一併清掉，重要盤點請定期匯出。
-    </div>
-  </section>
-
-  <section id="safety">
-    <h2>🛡️ 安全與檢查</h2>
-    <div class="cards">
-      <div class="card">
-        <h3>檢查的年度規律</h3>
-        <table>
-          <tr><th>檢查</th><th>頻率</th></tr>
-          <tr><td>實驗室安全衛生聯合檢查</td><td>每學期一次（環安室）</td></tr>
-          <tr><td>化工館消防檢查</td><td>約每年 1 月</td></tr>
+        <table id="inv-table">
+          <thead>
+            <tr>
+              <th>類別</th><th>品項</th><th>顏色／規格</th><th>數量</th>
+              <th>備註</th><th>最後更新</th><th></th>
+            </tr>
+          </thead>
+          <tbody id="inv-body"></tbody>
         </table>
-        <p style="margin-top:8px;font-size:.85rem;color:var(--sub)">受檢日以化工系技士每學期寄的行程表為準</p>
+        <p class="inv-empty" id="inv-empty" hidden>目前沒有資料，用上面的表單新增第一筆吧。</p>
+        <p class="muted" id="inv-summary" style="margin-top:12px"></p>
       </div>
-      <div class="card">
-        <h3>每學期初自主檢查</h3>
-        <p>共 8 項：查核表、告知單、自動檢查、消防、防護具、藥品清單、清潔、檢點表。</p>
-        <a class="morebtn" href="#d-check">看 8 項詳細內容 →</a>
+
+      <div class="note">
+        <strong>資料存在哪裡：</strong>這個頁面沒有伺服器，盤點資料存在<strong>你這台電腦的瀏覽器</strong>裡（localStorage），
+        只有在這個瀏覽器、這個網址看得到。換電腦、換人接手或要備份，請按<strong>匯出 CSV</strong> 存檔，
+        到新的地方再用<strong>匯入 CSV</strong> 讀回來。清除瀏覽器資料會一併清掉，重要盤點請定期匯出。
       </div>
     </div>
   </section>
 
-  <section id="waste">
-    <h2>🧪 廢液處理</h2>
-    <div class="card">
-      <p><strong>平常倒廢液：先分有機／無機，倒對桶。</strong></p>
-      <table style="margin-top:8px">
-        <tr><th>有機類</th><th>無機類</th></tr>
-        <tr><td>含鹵有機、不含鹵有機、有機酸</td><td>無機酸、氧化性酸、鹼性、含砷、重金屬混和</td></tr>
-      </table>
-      <div class="callout">
-        桶子到 <strong>50%–80% 滿</strong>就要登入學校「實驗室廢液管理系統」申請清運（單桶上限 20 公升）。發現快滿請告知管理人。
+  <!-- ===================== 安全與檢查 ===================== -->
+  <section class="page" id="safety" data-nav="safety">
+    <div class="wrap">
+      <h1 class="ptitle">安全與檢查</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">每學期 8 項 · 紀錄留存 3 年</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="grid grid--2">
+        <div class="card">
+          <h3>檢查的年度規律</h3>
+          <table>
+            <tr><th>檢查</th><th>頻率</th></tr>
+            <tr><td>實驗室安全衛生聯合檢查</td><td>每學期一次（環安室）</td></tr>
+            <tr><td>化工館消防檢查</td><td>約每年 <span class="q">1 月</span></td></tr>
+          </table>
+          <p class="muted" style="margin-top:10px">受檢日以化工系技士每學期寄的行程表為準</p>
+        </div>
+        <div class="card">
+          <h3>每學期初自主檢查</h3>
+          <p>共 <span class="q">8</span> 項：查核表、告知單、自動檢查、消防、防護具、藥品清單、清潔、檢點表。</p>
+          <a class="morebtn" href="#d-check">看 8 項詳細內容 →</a>
+        </div>
       </div>
     </div>
   </section>
 
-  <section id="buy">
-    <h2>🛒 採購與報帳</h2>
-    <div class="card">
-      <p style="font-weight:700">鐵則：到貨一律拍照商品，發票交給行政助理報帳。</p>
-      <table style="margin-top:10px">
-        <tr><th>類別</th><th>流程</th></tr>
-        <tr><td>藥品</td><td>自己提出 → 老師同意 → 依老師指示向藥品商或配合廠商訂購</td></tr>
-        <tr><td>矽膠耗材</td><td>在耗材群組直接說需求</td></tr>
-        <tr><td>塑膠耗材</td><td>自己找代理商 → 購物車或報價單給老師 → 同意後下單</td></tr>
-      </table>
+  <!-- ===================== 廢液處理 ===================== -->
+  <section class="page" id="waste" data-nav="waste">
+    <div class="wrap">
+      <h1 class="ptitle">廢液處理</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">單桶上限 20 公升</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="card card--key">
+        <span class="keyline">50% – 80%</span>
+        <p>桶子到這個範圍就要登入學校「實驗室廢液管理系統」申請清運，單桶上限 <span class="q">20 公升</span>。發現快滿請告知管理人。</p>
+      </div>
+
+      <div class="card">
+        <h3>平常倒廢液：先分有機／無機，倒對桶</h3>
+        <table>
+          <tr><th>有機類</th><th>無機類</th></tr>
+          <tr>
+            <td>含鹵有機、不含鹵有機、有機酸</td>
+            <td>無機酸、氧化性酸、鹼性、含砷、重金屬混和</td>
+          </tr>
+        </table>
+      </div>
     </div>
   </section>
 
-  <section id="members">
-    <h2>👥 成員</h2>
-    <div class="card">
-      <table>
-        <tr><th>成員</th><th>身分</th><th>研究主題／職責</th></tr>
-        <tr><td>杜鶴芸</td><td>指導教授</td><td>尖端材料成長、觸媒製備與分析、電化學／原子力顯微鏡</td></tr>
-        <tr><td>3D 列印區管理人</td><td>碩士生</td><td>熱模擬、3D 列印</td></tr>
-        <tr><td>碩士生（電池組）</td><td>碩士生</td><td>電池</td></tr>
-        <tr><td>碩士生（防腐蝕組）</td><td>碩士生</td><td>金屬防腐蝕</td></tr>
-        <tr><td>碩士生（115 入學）</td><td>碩士生</td><td>題目規劃中</td></tr>
-        <tr><td>行政助理</td><td>行政</td><td>報帳</td></tr>
-      </table>
-      <p style="margin-top:8px;font-size:.82rem;color:var(--sub)">聯絡方式請洽實驗室內部通訊錄</p>
+  <!-- ===================== 採購與報帳 ===================== -->
+  <section class="page" id="buy" data-nav="buy">
+    <div class="wrap">
+      <h1 class="ptitle">採購與報帳</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">到貨拍照 · 發票給行政助理</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="card card--key">
+        <span class="keyline">拍照 → 交發票</span>
+        <p>鐵則：到貨一律拍照商品，發票交給行政助理報帳。</p>
+      </div>
+
+      <div class="card">
+        <h3>三種耗材，三條路</h3>
+        <table>
+          <tr><th>類別</th><th>流程</th></tr>
+          <tr><td>藥品</td><td>自己提出 → 老師同意 → 依老師指示向藥品商或配合廠商訂購</td></tr>
+          <tr><td>矽膠耗材</td><td>在耗材群組直接說需求</td></tr>
+          <tr><td>塑膠耗材</td><td>自己找代理商 → 購物車或報價單給老師 → 同意後下單</td></tr>
+        </table>
+      </div>
     </div>
   </section>
 
-  <section id="rules">
-    <h2>📋 其他規則</h2>
-    <div class="cards">
-      <div class="card">
-        <h3>值日</h3>
-        <p>公共區域每週輪值（順序見實驗室公告）；自己的實驗桌自己顧。<strong>環安室檢查前一週全員大掃除。</strong></p>
+  <!-- ===================== 成員 ===================== -->
+  <section class="page" id="members" data-nav="members">
+    <div class="wrap">
+      <h1 class="ptitle">成員</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">6 位</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
       </div>
+
       <div class="card">
-        <h3>數據管理</h3>
-        <p>數據、切片檔、報告存實驗室電腦 <strong>D 碟，一人一資料夾</strong>。新成員報到時自己開資料夾。</p>
+        <table>
+          <tr><th>成員</th><th>身分</th><th>研究主題／職責</th></tr>
+          <tr><td>杜鶴芸</td><td>指導教授</td><td>尖端材料成長、觸媒製備與分析、電化學／原子力顯微鏡</td></tr>
+          <tr><td>3D 列印區管理人</td><td>碩士生</td><td>熱模擬、3D 列印</td></tr>
+          <tr><td>碩士生（電池組）</td><td>碩士生</td><td>電池</td></tr>
+          <tr><td>碩士生（防腐蝕組）</td><td>碩士生</td><td>金屬防腐蝕</td></tr>
+          <tr><td>碩士生（115 入學）</td><td>碩士生</td><td>題目規劃中</td></tr>
+          <tr><td>行政助理</td><td>行政</td><td>報帳</td></tr>
+        </table>
+        <p class="muted" style="margin-top:10px">聯絡方式請洽實驗室內部通訊錄</p>
       </div>
+    </div>
+  </section>
+
+  <!-- ===================== 其他規則 ===================== -->
+  <section class="page" id="rules" data-nav="rules">
+    <div class="wrap">
+      <h1 class="ptitle">其他規則</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">值日 · 數據 · 新生</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="grid">
+        <div class="card">
+          <h3>值日</h3>
+          <p>公共區域每週輪值（順序見實驗室公告）；自己的實驗桌自己顧。<strong>環安室檢查前一週全員大掃除。</strong></p>
+        </div>
+        <div class="card">
+          <h3>數據管理</h3>
+          <p>數據、切片檔、報告存實驗室電腦 <strong>D 碟，一人一資料夾</strong>。新成員報到時自己開資料夾。</p>
+        </div>
+        <div class="card">
+          <h3>新生第一步</h3>
+          <p>找 3D 列印區管理人安排儀器受訓；詳細指南見實驗室知識庫「新生訓練」。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== H2D ===================== -->
+  <section class="page" id="d-h2d" data-nav="print">
+    <div class="wrap">
+      <a class="backlink" href="#print">← 3D 列印區</a>
+      <h1 class="ptitle">Bambu Lab H2D</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">FDM · 主力機 · 需登記</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="grid grid--2">
+        <div class="card">
+          <h3>基本資訊</h3>
+          <ul>
+            <li>切片軟體：Bambu Studio</li>
+            <li>材料：PLA、PETG、ABS／ASA、TPU</li>
+            <li>送料：AMS 自動換料＋外掛料架都有（常用料進 AMS，特殊料走外掛）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3>耗材存放</h3>
+          <ul>
+            <li>開封的線材：防潮箱＋AMS 裡</li>
+            <li>未開封：封好的紙箱</li>
+            <li>常用小量：好拿的箱子</li>
+          </ul>
+        </div>
+      </div>
+
       <div class="card">
-        <h3>新生第一步</h3>
-        <p>找 3D 列印區管理人安排儀器受訓；詳細指南見實驗室知識庫「新生訓練」。</p>
+        <h3>操作步驟</h3>
+        <ol>
+          <li>開機與檢查：確認平台乾淨、料量足夠</li>
+          <li>上料／換料：常用料放 AMS；特殊料（如 TPU）掛外掛料架</li>
+          <li>切片：Bambu Studio 選對材料與板面設定</li>
+          <li>傳檔：<strong>依規定用隨身碟</strong>（機台盡量不聯網）</li>
+          <li>列印中注意：頭幾層留意第一層有沒有黏好</li>
+          <li>取件與收尾，並完成使用後表單登記</li>
+        </ol>
+      </div>
+
+      <div class="card card--key">
+        <h3>第一層黏不住／翹曲怎麼救</h3>
+        <ol>
+          <li>拿<strong>中性洗碗精洗打印板</strong>——紋理板可用菜瓜布刷；<strong>光面板只能用海綿</strong>，菜瓜布會刮花</li>
+          <li>上膠水／平台膠</li>
+          <li>改切片設定（加 brim、調溫度）</li>
+        </ol>
+      </div>
+
+      <div class="note">
+        卡關查 <a href="https://wiki.bambulab.com">Bambu Lab Wiki</a>——官方教學與故障排除大全。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== Ender ===================== -->
+  <section class="page" id="d-ender" data-nav="print">
+    <div class="wrap">
+      <a class="backlink" href="#print">← 3D 列印區</a>
+      <h1 class="ptitle">Creality Ender 3 S1</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">FDM · 備用機 · 需受訓</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="note note--risk">
+        <strong>需受訓才能用</strong>——這台要手動調平，沒有 H2D 的自動校正，調不好第一層就失敗。想學找 3D 列印區管理人。
+      </div>
+
+      <div class="card card--key">
+        <span class="keyline">0.08 – 0.1 mm</span>
+        <p>Z-offset 要調到噴嘴與平台差<strong>一張 A4 紙的厚度</strong>。太遠黏不住；太近擠不出還會刮平台；剛好是線材均勻擠出平貼。</p>
+      </div>
+
+      <div class="card">
+        <h3>調平（受訓重點）</h3>
+        <ol>
+          <li><strong>自動調平</strong>：開機 → 螢幕選「Level」→ 自動歸位並做 <span class="q">16 點</span>校正</li>
+          <li><strong>設 Z-offset</strong>：Prepare → Z-offset，調到<span class="q">0.08–0.1mm</span>，按旋鈕確認</li>
+          <li><strong>輔助調平</strong>（平台傾斜 <span class="q">&gt;2mm</span>、自動調平失敗時）：Control → Reset configuration → Auto Home → Move Z 歸零 → 設 Z-offset → Disable stepper → 轉熱床底下四角旋鈕，讓四角都是一張 A4 紙的距離</li>
+        </ol>
+      </div>
+
+      <div class="grid grid--2">
+        <div class="card">
+          <h3>上料</h3>
+          <ol>
+            <li>線材尾端剪 <span class="q">45°</span> 斜角</li>
+            <li>穿過斷料偵測器的孔 → 按住擠出機把手 → 沿孔插到噴嘴位置</li>
+            <li>預熱噴嘴，到溫後看到料流出＝完成</li>
+          </ol>
+        </div>
+        <div class="card">
+          <h3>換料</h3>
+          <ul>
+            <li><strong>沒在列印</strong>：噴嘴加熱到 <span class="q">185°C</span> 以上 → 按住把手<strong>快速抽出</strong>（慢慢拉會卡管）→ 照上料步驟換新料</li>
+            <li><strong>列印中</strong>：先暫停 → 停穩後抽出 → 穿新料 → 先擠掉殘料再續印</li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>列印</h3>
+        <ol>
+          <li>切片（Creality Slicer／Cura）存到記憶卡</li>
+          <li><strong>檔名只能英文或數字</strong>——中文檔名螢幕顯示不出來</li>
+          <li>插卡 → 旋鈕選檔 → 開印</li>
+        </ol>
+      </div>
+
+      <div class="note note--risk">
+        <strong>原廠安全警告：</strong>開機狀態<strong>不要用手移動噴嘴或平台</strong>（會觸發保護斷電）。
+        噴嘴和平台高溫，列印中勿碰，清噴嘴一定用工具。清潔前先關電源；平台可用玻璃清潔劑或 IPA 擦。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== S050 ===================== -->
+  <section class="page" id="d-s050" data-nav="print">
+    <div class="wrap">
+      <a class="backlink" href="#print">← 3D 列印區</a>
+      <h1 class="ptitle">San Draw S050 矽膠列印機</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">矽膠 · FAM · 需受訓</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="note note--risk">
+        <strong>需受訓才能用</strong>——矽膠列印流程跟 FDM 完全不同，弄錯會浪費貴料或堵管。想學找 3D 列印區管理人。
+      </div>
+
+      <div class="card card--key">
+        <h3>最容易出事的四個環節</h3>
+        <ol>
+          <li><strong>校正</strong>——沒校好直接影響成敗，列印前務必確實</li>
+          <li><strong>擠料異常要警覺</strong>——擠料不順可能是<strong>該換噴頭</strong>的訊號，硬印會失敗</li>
+          <li><strong>裝料／換料</strong>——步驟特殊，沒學過不要自己來</li>
+          <li><strong>噴頭堵塞</strong>——矽膠在管路裡固化就麻煩了</li>
+        </ol>
+      </div>
+
+      <div class="card">
+        <h3>基本資訊</h3>
+        <ul>
+          <li>技術：FAM（Fluid Additive Manufacturing，三遞專利）</li>
+          <li>軟體：三遞原廠軟體（FAMufacture／Cura）</li>
+          <li>材料：<span class="q">SIL28</span>（較硬）、<span class="q">SIL18</span>（較軟），依研究需求選硬度</li>
+          <li>固化：<strong>自然固化即可，不用烤箱</strong></li>
+        </ul>
+      </div>
+
+      <div class="note">
+        受訓前先看 <a href="https://www.youtube.com/watch?v=HKKYj6frskE">San Draw 官方 YouTube</a>——S050 介紹與操作教程。
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 考核制度 ===================== -->
+  <section class="page" id="d-exam" data-nav="print">
+    <div class="wrap">
+      <a class="backlink" href="#print">← 3D 列印區</a>
+      <h1 class="ptitle">3D 列印使用考核制度</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">3 個等級 · 草案</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="note">
+        草案尚未定案，以管理人公告為準。目標：機器貴、耗材貴，確保每個人具備基本能力再上機。
+      </div>
+
+      <div class="grid" style="margin-top:16px">
+        <div class="card">
+          <h3><span class="q">Lv.1</span>　基礎（H2D）</h3>
+          <ul>
+            <li>問答：登記規則（前紙本後表單）、傳檔規定（隨身碟）、打印板清潔（紋理板 vs 光面板）</li>
+            <li>實作：在管理人陪同下完成一次完整列印（切片 → 傳檔 → 上料 → 列印 → 取件 → 登記）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="q">Lv.2</span>　進階（＋Ender）</h3>
+          <ul>
+            <li>實作：手動調平到管理人認可</li>
+            <li>問答：調平失敗會怎樣、怎麼判斷第一層有沒有黏好</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h3><span class="q">Lv.3</span>　矽膠（＋S050）</h3>
+          <ul>
+            <li>受訓：管理人帶一次完整流程（裝料、校正、列印、清潔）</li>
+            <li>問答：擠料不順代表什麼、哪些環節最容易出事</li>
+            <li>實作：獨立完成一件並通過檢查</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 自主檢查 8 項 ===================== -->
+  <section class="page" id="d-check" data-nav="safety">
+    <div class="wrap">
+      <a class="backlink" href="#safety">← 安全與檢查</a>
+      <h1 class="ptitle">每學期初自主檢查</h1>
+      <div class="scalebar">
+        <span class="scalebar__bar" aria-hidden="true"></span>
+        <span class="scalebar__meta">8 項 · 每學期初</span>
+        <span class="scalebar__rule" aria-hidden="true"></span>
+      </div>
+
+      <div class="card">
+        <ol>
+          <li><strong>實習場所安全衛生認證制度查核表</strong>——線上（實驗室安全巡檢管理系統，校內網）或紙本二擇一</li>
+          <li><strong>自動檢查紀錄</strong>——列管檢查、定期檢查（排氣裝置、滅火器等）、作業檢點</li>
+          <li><strong>安全衛生告知單</strong>——每次實驗課講解安全規定並簽名，<strong>紀錄保存 <span class="q">3 年</span></strong></li>
+          <li><strong>消防設備自動檢查</strong>——消防栓箱、緊急照明、出口標示燈</li>
+          <li><strong>防護器具</strong>——依實驗性質建清冊，實驗中確實配戴</li>
+          <li><strong>化學藥品管理</strong>——清單<strong>每學年更新</strong>，依性質分類儲放</li>
+          <li><strong>實驗室環境清潔</strong></li>
+          <li><strong>有機溶劑＋特化作業檢點表</strong>——紙本填寫、留室備查（本實驗室不用鋼瓶表）</li>
+        </ol>
       </div>
     </div>
   </section>
 
 </main>
 
-<!-- ===== 詳細頁：H2D ===== -->
-<section class="detail" id="d-h2d">
-  <div class="backbar"><a href="#print">← 回總覽</a></div>
-  <div class="wrap">
-    <h2>🖨️ Bambu Lab H2D（主力機）</h2>
-    <div class="card">
-      <h3>基本資訊</h3>
-      <ul>
-        <li>切片軟體：Bambu Studio</li>
-        <li>材料：PLA、PETG、ABS／ASA、TPU</li>
-        <li>送料：AMS 自動換料＋外掛料架都有（常用料進 AMS，特殊料走外掛）</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>操作步驟</h3>
-      <ol class="steps">
-        <li>開機與檢查：確認平台乾淨、料量足夠</li>
-        <li>上料／換料：常用料放 AMS；特殊料（如 TPU）掛外掛料架</li>
-        <li>切片：Bambu Studio 選對材料與板面設定</li>
-        <li>傳檔：<strong>依規定用隨身碟</strong>（機台盡量不聯網）</li>
-        <li>列印中注意：頭幾層留意第一層有沒有黏好</li>
-        <li>取件與收尾，並完成使用後表單登記</li>
-      </ol>
-    </div>
-    <div class="card">
-      <h3>第一層黏不住／翹曲怎麼救</h3>
-      <ol class="steps">
-        <li>拿<strong>中性洗碗精洗打印板</strong>——紋理板可用菜瓜布刷；<strong>光面板只能用海綿</strong>，菜瓜布會刮花！</li>
-        <li>上膠水／平台膠</li>
-        <li>改切片設定（加 brim、調溫度）</li>
-      </ol>
-    </div>
-    <div class="card">
-      <h3>耗材存放</h3>
-      <ul>
-        <li>開封的線材：防潮箱＋AMS 裡</li>
-        <li>未開封：封好的紙箱</li>
-        <li>常用小量：好拿的箱子</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>卡關查這裡</h3>
-      <p><a href="https://wiki.bambulab.com">Bambu Lab Wiki</a>——官方教學與故障排除大全</p>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 詳細頁：Ender ===== -->
-<section class="detail" id="d-ender">
-  <div class="backbar"><a href="#print">← 回總覽</a></div>
-  <div class="wrap">
-    <h2>🖨️ Creality Ender 3 S1（備用機）</h2>
-    <div class="callout" style="margin-bottom:14px"><strong>需受訓才能用</strong>——這台要手動調平，沒有 H2D 的自動校正，調不好第一層就失敗。想學找 3D 列印區管理人。</div>
-    <div class="card">
-      <h3>調平（受訓重點）</h3>
-      <ol class="steps">
-        <li><strong>自動調平</strong>：開機 → 螢幕選「Level」→ 自動歸位並做 16 點校正</li>
-        <li><strong>設 Z-offset</strong>：Prepare → Z-offset，調到噴嘴與平台距離約<strong>一張 A4 紙厚（0.08–0.1mm）</strong>，按旋鈕確認</li>
-        <li><strong>輔助調平</strong>（平台傾斜 &gt;2mm、自動調平失敗時）：Control → Reset configuration → Auto Home → Move Z 歸零 → 設 Z-offset → Disable stepper → 轉熱床底下四角旋鈕，讓四角都是一張 A4 紙的距離</li>
-        <li><strong>判斷</strong>：太遠→黏不住；太近→擠不出、刮平台；剛好→線材均勻擠出平貼</li>
-      </ol>
-    </div>
-    <div class="card">
-      <h3>上料</h3>
-      <ol class="steps">
-        <li>線材尾端剪 <strong>45° 斜角</strong></li>
-        <li>穿過斷料偵測器的孔 → 按住擠出機把手 → 沿孔插到噴嘴位置</li>
-        <li>預熱噴嘴，到溫後看到料流出＝完成</li>
-      </ol>
-    </div>
-    <div class="card">
-      <h3>換料</h3>
-      <ul>
-        <li><strong>沒在列印</strong>：噴嘴加熱到 185°C 以上 → 按住把手<strong>快速抽出</strong>（慢慢拉會卡管）→ 照上料步驟換新料</li>
-        <li><strong>列印中</strong>：先暫停 → 停穩後抽出 → 穿新料 → 先擠掉殘料再續印</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>列印</h3>
-      <ol class="steps">
-        <li>切片（Creality Slicer／Cura）存到記憶卡</li>
-        <li>⚠️ <strong>檔名只能英文或數字</strong>——中文檔名螢幕顯示不出來</li>
-        <li>插卡 → 旋鈕選檔 → 開印</li>
-      </ol>
-    </div>
-    <div class="card">
-      <h3>安全注意（原廠警告）</h3>
-      <ul>
-        <li>開機狀態<strong>不要用手移動噴嘴或平台</strong>（會觸發保護斷電）</li>
-        <li>噴嘴和平台高溫，列印中勿碰；清噴嘴一定用工具</li>
-        <li>清潔前先關電源；平台可用玻璃清潔劑或 IPA 擦</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 詳細頁：S050 ===== -->
-<section class="detail" id="d-s050">
-  <div class="backbar"><a href="#print">← 回總覽</a></div>
-  <div class="wrap">
-    <h2>🖨️ San Draw S050 矽膠列印機</h2>
-    <div class="callout" style="margin-bottom:14px"><strong>需受訓才能用</strong>——矽膠列印流程跟 FDM 完全不同，弄錯會浪費貴料或堵管。想學找 3D 列印區管理人。</div>
-    <div class="card">
-      <h3>基本資訊</h3>
-      <ul>
-        <li>技術：FAM（Fluid Additive Manufacturing，三遞專利）</li>
-        <li>軟體：三遞原廠軟體（FAMufacture／Cura）</li>
-        <li>材料：SIL28（較硬）、SIL18（較軟），依研究需求選硬度</li>
-        <li>固化：<strong>自然固化即可，不用烤箱</strong></li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>⚠️ 最容易出事的環節</h3>
-      <ol class="steps">
-        <li><strong>校正</strong>——沒校好直接影響成敗，列印前務必確實</li>
-        <li><strong>擠料異常要警覺</strong>——擠料不順可能是<strong>該換噴頭</strong>的訊號，硬印會失敗</li>
-        <li><strong>裝料／換料</strong>——步驟特殊，沒學過不要自己來</li>
-        <li><strong>噴頭堵塞</strong>——矽膠在管路裡固化就麻煩了</li>
-      </ol>
-    </div>
-    <div class="card">
-      <h3>教學資源</h3>
-      <p><a href="https://www.youtube.com/watch?v=HKKYj6frskE">San Draw 官方 YouTube</a>——S050 介紹與操作教程，受訓前先看</p>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 詳細頁：考核制度 ===== -->
-<section class="detail" id="d-exam">
-  <div class="backbar"><a href="#print">← 回總覽</a></div>
-  <div class="wrap">
-    <h2>🎓 3D 列印使用考核制度（草案）</h2>
-    <div class="callout" style="margin-bottom:14px">草案尚未定案，以管理人公告為準。目標：機器貴、耗材貴，確保每個人具備基本能力再上機。</div>
-    <div class="card">
-      <h3>Lv.1 基礎（H2D）</h3>
-      <ul>
-        <li>問答：登記規則（前紙本後表單）、傳檔規定（隨身碟）、打印板清潔（紋理板 vs 光面板）</li>
-        <li>實作：在管理人陪同下完成一次完整列印（切片 → 傳檔 → 上料 → 列印 → 取件 → 登記）</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>Lv.2 進階（＋Ender）</h3>
-      <ul>
-        <li>實作：手動調平到管理人認可</li>
-        <li>問答：調平失敗會怎樣、怎麼判斷第一層有沒有黏好</li>
-      </ul>
-    </div>
-    <div class="card">
-      <h3>Lv.3 矽膠（＋S050）</h3>
-      <ul>
-        <li>受訓：管理人帶一次完整流程（裝料、校正、列印、清潔）</li>
-        <li>問答：擠料不順代表什麼、哪些環節最容易出事</li>
-        <li>實作：獨立完成一件並通過檢查</li>
-      </ul>
-    </div>
-  </div>
-</section>
-
-<!-- ===== 詳細頁：自主檢查 8 項 ===== -->
-<section class="detail" id="d-check">
-  <div class="backbar"><a href="#safety">← 回總覽</a></div>
-  <div class="wrap">
-    <h2>🛡️ 每學期初自主檢查（8 項）</h2>
-    <div class="card">
-      <ol class="steps">
-        <li><strong>實習場所安全衛生認證制度查核表</strong>——線上（實驗室安全巡檢管理系統，校內網）或紙本二擇一</li>
-        <li><strong>自動檢查紀錄</strong>——列管檢查、定期檢查（排氣裝置、滅火器等）、作業檢點</li>
-        <li><strong>安全衛生告知單</strong>——每次實驗課講解安全規定並簽名，<strong>紀錄保存 3 年</strong></li>
-        <li><strong>消防設備自動檢查</strong>——消防栓箱、緊急照明、出口標示燈</li>
-        <li><strong>防護器具</strong>——依實驗性質建清冊，實驗中確實配戴</li>
-        <li><strong>化學藥品管理</strong>——清單<strong>每學年更新</strong>，依性質分類儲放</li>
-        <li><strong>實驗室環境清潔</strong></li>
-        <li><strong>有機溶劑＋特化作業檢點表</strong>——紙本填寫、留室備查（本實驗室不用鋼瓶表）</li>
-      </ol>
-    </div>
-  </div>
-</section>
-
 <footer>
-  先進顯微鏡技術實驗室內部知識庫 · 更新：2026-07-07 · 由第二大腦（Obsidian）知識庫生成
+  先進顯微鏡技術實驗室內部知識庫 · 更新 2026-08-05
 </footer>
 
 <script>
+/* ===== 分頁路由：JS 啟動後才隱藏非當前分頁；沒有 JS 就退回長捲頁 ===== */
+(function () {
+  var pages = Array.prototype.slice.call(document.querySelectorAll('.page'));
+  if (!pages.length) return;
+  var links = Array.prototype.slice.call(document.querySelectorAll('nav a'));
+  var byId = {};
+  pages.forEach(function (p) { byId[p.id] = p; });
+
+  document.body.classList.add('routed');
+
+  // 直接開 #print 這種網址時，瀏覽器會自己捲到該錨點、把抬頭推出畫面，
+  // 而且那個捲動排在腳本之後，事後補捲會來不及。改成先把 fragment 拿掉
+  // 讓瀏覽器沒得捲，路由完再用 replaceState 放回去（replaceState 不會捲動）。
+  var forcedId = null;
+  if (location.hash) {
+    var h0 = decodeURIComponent(location.hash.slice(1));
+    if (byId[h0]) {
+      forcedId = h0;
+      history.replaceState(null, '', location.pathname + location.search);
+    }
+  }
+
+  function route() {
+    var id = forcedId !== null ? forcedId : decodeURIComponent(location.hash.slice(1));
+    var target = byId[id] || byId.home;
+    pages.forEach(function (p) { p.classList.toggle('is-active', p === target); });
+
+    // 詳細頁沿用所屬區塊的導覽項目（例：H2D 頁面停在「3D 列印區」）
+    var owner = target.getAttribute('data-nav');
+    links.forEach(function (a) {
+      a.classList.toggle('is-current', a.getAttribute('data-nav') === owner);
+    });
+
+    document.title = (target.id === 'home' ? '' :
+      (target.querySelector('.ptitle') || {}).textContent + ' · ') +
+      '先進顯微鏡技術實驗室 · 內部知識庫';
+  }
+
+  // 每個區塊現在是獨立分頁，切換後一律從頁首看起
+  function toTop() {
+    window.scrollTo(0, 0);
+    requestAnimationFrame(function () { window.scrollTo(0, 0); });
+  }
+
+  if ('scrollRestoration' in history) history.scrollRestoration = 'manual';
+
+  window.addEventListener('hashchange', function () { route(); toTop(); });
+
+  route();
+  if (forcedId !== null) {
+    history.replaceState(null, '', '#' + forcedId);   // 把可分享的網址放回去
+    forcedId = null;
+  }
+  toTop();
+  window.addEventListener('load', toTop);
+})();
+
 /* ===== 耗材盤點：資料存在瀏覽器 localStorage，靠匯出／匯入 CSV 備份與交接 ===== */
 (function () {
   var KEY = 'lab-inventory-v1';
@@ -717,6 +1072,12 @@
     $('inv-summary').textContent = totalKinds
       ? '共 ' + totalKinds + ' 種品項（顯示 ' + rows.length + ' 筆）｜' + parts.join('、')
       : '';
+
+    // 標尺與首頁入口卡上的「量」
+    var meta = totalKinds ? totalKinds + ' 種品項' : '尚未建立';
+    ['inv-meta', 'home-inv-meta'].forEach(function (id) {
+      var el = $(id); if (el) el.textContent = meta;
+    });
   }
 
   function step(id, d) {
