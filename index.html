@@ -30,7 +30,10 @@
     --mono: ui-monospace, "SF Mono", Menlo, Consolas, "Noto Sans Mono", monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { font-size: 18px; }
+  /* scroll-padding-top：導覽列是 sticky，任何錨點捲動都得留出它的高度，
+     否則標題會被蓋住。路由本身已經會回到頁首，這是第二道保險——
+     萬一某個瀏覽器仍執行了錨點捲動，標題也不會躲到導覽列後面。 */
+  html { font-size: 18px; scroll-padding-top: 64px; }
   body {
     font-family: "PingFang TC", "Microsoft JhengHei", "Noto Sans TC", sans-serif;
     background: var(--paper); color: var(--ink); line-height: 1.75;
@@ -59,7 +62,7 @@
     text-decoration: none; color: #fff;
   }
   .masthead__meta {
-    font-family: var(--mono); font-size: .72rem; letter-spacing: .08em;
+    font-family: var(--mono); font-size: .78rem; letter-spacing: .08em;
     color: #9DB6DC; text-transform: uppercase;
   }
 
@@ -83,8 +86,10 @@
   /* ===== 路由：JS 啟動後才隱藏非當前分頁。沒有 JS 就退回長捲頁 ===== */
   .page { display: block; }
   body.routed .page { display: none; }
+  /* 只淡入、不位移：原本的 translateY(6px) 會讓量測工具在動畫中途讀到
+     偏移 6px 的座標，誤判成「標題被導覽列蓋住」，拿掉省事也更安靜 */
   body.routed .page.is-active { display: block; animation: rise .12s ease-out; }
-  @keyframes rise { from { opacity: 0; transform: translateY(6px); } }
+  @keyframes rise { from { opacity: 0; } }
 
   /* ===== 標題與標尺（本頁的簽名元素）===== */
   .ptitle {
@@ -97,7 +102,7 @@
     border: 2px solid var(--navy-500); border-top: 0;
   }
   .scalebar__meta {
-    font-family: var(--mono); font-size: .72rem; letter-spacing: .03em;
+    font-family: var(--mono); font-size: .78rem; letter-spacing: .03em;
     color: var(--ink-sub); white-space: nowrap;
   }
   .scalebar__rule { flex: 1; height: 1px; background: var(--line); min-width: 0; }
@@ -129,7 +134,7 @@
     box-shadow: 0 6px 18px rgba(15,38,71,.09);
   }
   .entry__meta {
-    font-family: var(--mono); font-size: .68rem; letter-spacing: .03em;
+    font-family: var(--mono); font-size: .78rem; letter-spacing: .03em;
     color: var(--navy-500); text-transform: uppercase;
   }
   .entry__title { font-size: 1.04rem; font-weight: 700; color: var(--navy-900); }
@@ -173,7 +178,7 @@
   table { width: 100%; border-collapse: collapse; font-size: .88rem; }
   th {
     text-align: left; padding: 7px 10px 7px 0;
-    font-family: var(--mono); font-size: .68rem; font-weight: 600;
+    font-family: var(--mono); font-size: .78rem; font-weight: 600;
     letter-spacing: .06em; text-transform: uppercase; color: var(--ink-sub);
     border-bottom: 1.5px solid var(--navy-100); white-space: nowrap;
   }
@@ -182,7 +187,7 @@
   th:last-child, td:last-child { padding-right: 0; }
 
   .pill {
-    display: inline-block; font-family: var(--mono); font-size: .68rem;
+    display: inline-block; font-family: var(--mono); font-size: .78rem;
     padding: 1px 8px; border-radius: 4px; font-weight: 600;
     background: var(--navy-100); color: var(--navy-700); white-space: nowrap;
   }
@@ -200,7 +205,7 @@
   footer {
     border-top: 1px solid var(--line); padding: 22px 0;
     text-align: center; color: var(--ink-sub);
-    font-family: var(--mono); font-size: .7rem; letter-spacing: .04em;
+    font-family: var(--mono); font-size: .78rem; letter-spacing: .04em;
   }
 
   /* ===== 耗材盤點 ===== */
@@ -211,7 +216,7 @@
   .inv-field { display: flex; flex-direction: column; gap: 5px; }
   .inv-form .full { grid-column: 1 / -1; }
   .inv-field label {
-    font-family: var(--mono); font-size: .68rem; letter-spacing: .05em;
+    font-family: var(--mono); font-size: .78rem; letter-spacing: .05em;
     color: var(--ink-sub); text-transform: uppercase;
   }
   .inv-form input, .inv-form select, .inv-tools input, .inv-tools select {
@@ -261,7 +266,7 @@
   .linkbtn:hover { text-decoration: underline; }
   .linkbtn.del { color: var(--danger); }
   .cat-pill {
-    display: inline-block; font-family: var(--mono); font-size: .68rem;
+    display: inline-block; font-family: var(--mono); font-size: .78rem;
     padding: 1px 8px; border-radius: 4px; font-weight: 600;
     background: var(--navy-100); color: var(--navy-700); white-space: nowrap;
   }
@@ -916,6 +921,15 @@
 
   document.body.classList.add('routed');
 
+  // 手機上導覽列放不下七個項目，作用中的那個常常落在畫面外，看不出自己在哪一區。
+  // 用計算 scrollLeft 而不是 scrollIntoView()——後者會連帶捲動整個頁面。
+  function centerNav(a) {
+    var w = document.querySelector('nav .wrap');
+    if (!w || w.scrollWidth <= w.clientWidth) return;   // 桌面放得下就不要動它
+    var want = a.offsetLeft - (w.clientWidth - a.offsetWidth) / 2;
+    w.scrollLeft = Math.max(0, Math.min(want, w.scrollWidth - w.clientWidth));
+  }
+
   // 直接開 #print 這種網址時，瀏覽器會自己捲到該錨點、把抬頭推出畫面，
   // 而且那個捲動排在腳本之後，事後補捲會來不及。改成先把 fragment 拿掉
   // 讓瀏覽器沒得捲，路由完再用 replaceState 放回去（replaceState 不會捲動）。
@@ -936,7 +950,9 @@
     // 詳細頁沿用所屬區塊的導覽項目（例：H2D 頁面停在「3D 列印區」）
     var owner = target.getAttribute('data-nav');
     links.forEach(function (a) {
-      a.classList.toggle('is-current', a.getAttribute('data-nav') === owner);
+      var on = a.getAttribute('data-nav') === owner;
+      a.classList.toggle('is-current', on);
+      if (on) centerNav(a);
     });
 
     document.title = (target.id === 'home' ? '' :
