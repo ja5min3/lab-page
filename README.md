@@ -12,7 +12,10 @@
 ## 來源與同步
 
 - **這個 repo 是部署來源。** 線上網頁一律從 `main` 的 `index.html` 產生，
-  要改網頁就改這裡，改完推 `main`。
+  要改網頁就改這裡。
+- **改動走分支，不直接推 `main`。** 在分支上修改並完成驗證後，
+  **必須取得擁有者明確確認，才能合併進 `main`。**
+  合併即等於更新線上網站，沒有例外。
 - **vault 保留同步鏡像。** 第二大腦（Obsidian）內的「實驗室網頁.html」是這份檔案的
   鏡像，方便離線閱讀與版本留存。**它是鏡像，不是編輯來源。**
 - 兩邊要保持一致：改完 repo 後，把 `index.html` 覆蓋回 vault 那份鏡像。
@@ -45,12 +48,29 @@ key 為 `lab-inventory-v1`，綁定瀏覽器與網址。
 - 清除瀏覽器資料會一併清掉
 - **備份與交接靠頁面上的「匯出 CSV」**，到新的地方用「匯入 CSV」讀回來
 
-改動 `index.html` 時，以下不能更名，否則使用者已輸入的庫存會讀不到或功能失效：
+改動 `index.html` 時，以下不能更名，否則使用者已輸入的庫存會讀不到或功能失效。
+三類的壞法不一樣，改之前先看清楚是哪一類：
 
-- localStorage key：`lab-inventory-v1`
-- DOM id：`inv-form` `inv-cat` `inv-name` `inv-spec` `inv-qty` `inv-unit` `inv-note`
-  `inv-submit` `inv-cancel` `inv-search` `inv-filter` `inv-export` `inv-import`
-  `inv-import-btn` `inv-clear` `inv-body` `inv-empty` `inv-summary`
+**localStorage key** —— 換掉等於所有既有庫存讀不回來
+
+- `lab-inventory-v1`
+
+**JS 以 `getElementById` 抓的 DOM id** —— 換掉會直接壞掉或靜默失效
+
+- 表單與工具列：`inv-form` `inv-cat` `inv-name` `inv-spec` `inv-qty` `inv-unit`
+  `inv-note` `inv-submit` `inv-cancel` `inv-search` `inv-filter`
+  `inv-export` `inv-import` `inv-import-btn` `inv-clear`
+- 清單與統計：`inv-body` `inv-empty` `inv-summary`
+- 標尺與首頁入口卡上的品項數：`inv-meta` `home-inv-meta`
+  （這兩個是「找不到就跳過」的寫法，改名不會報錯，只會安靜地不再更新，特別容易漏掉）
+
+**HTML `list=` 指向的 datalist id** —— 換掉輸入建議會消失，不會報錯
+
+- `inv-name-list` `inv-spec-list` `inv-unit-list`
+
+**CSS 選擇器用到的 id** —— 換掉排版會跑掉
+
+- `inv-table`（`#inv-table` 有三條規則：最小寬度、儲存格對齊、數量欄字體）
 
 ## 設計慣例
 
