@@ -436,7 +436,7 @@
       <h1 class="ptitle">耗材盤點</h1>
       <div class="scalebar">
         <span class="scalebar__bar" aria-hidden="true"></span>
-        <span class="scalebar__meta"><span id="inv-meta">尚未建立</span> · 存本機瀏覽器</span>
+        <span class="scalebar__meta"><span id="inv-meta">尚未建立</span></span>
         <span class="scalebar__rule" aria-hidden="true"></span>
       </div>
 
@@ -531,10 +531,18 @@
         <p class="muted" id="inv-summary" style="margin-top:12px"></p>
       </div>
 
-      <div class="note">
+      <div class="note" id="inv-note-local">
         <strong>資料存在哪裡：</strong>這個頁面沒有伺服器，盤點資料存在<strong>你這台電腦的瀏覽器</strong>裡（localStorage），
         只有在這個瀏覽器、這個網址看得到。換電腦、換人接手或要備份，請按<strong>匯出 CSV</strong> 存檔，
         到新的地方再用<strong>匯入 CSV</strong> 讀回來。清除瀏覽器資料會一併清掉，重要盤點請定期匯出。
+      </div>
+
+      <div class="note" id="inv-note-sync" hidden>
+        <strong>資料存在哪裡：</strong>存在實驗室共用的 <strong>Google 試算表</strong>，
+        全實驗室看到的是同一份，誰改了都會同步。<strong>新增、修改、刪除需要寫入密碼</strong>，
+        第一次操作時輸入一次就會記住。<br>
+        網路不通時仍可照常操作，畫面會顯示「離線 · N 筆待同步」，恢復連線後自動補送。
+        本機另存一份快取供離線使用，但正本以試算表為準。
       </div>
     </div>
   </section>
@@ -979,29 +987,53 @@
   window.addEventListener('load', toTop);
 })();
 
-/* ===== 耗材盤點：資料存在瀏覽器 localStorage，靠匯出／匯入 CSV 備份與交接 ===== */
+/* ===== 耗材盤點 =====
+   INVENTORY_SYNC_URL 留空：資料只存這台瀏覽器的 localStorage（原本的行為）。
+   填入 Apps Script 網頁應用程式網址：全實驗室共用同一份 Google 試算表，
+   localStorage 降級成離線快取，斷線照常操作、回線自動補送。
+   後端程式碼與部署步驟見 apps-script/Code.gs 與 README.md。 */
+var INVENTORY_SYNC_URL = '';   // ← 部署好 Apps Script 後把網頁應用程式網址貼進這裡
+
 (function () {
-  var KEY = 'lab-inventory-v1';
-  var items = [];        // {id, cat, name, spec, qty, unit, note, updated}
+  var KEY  = 'lab-inventory-v1';        // 庫存資料（同步模式下是離線快取）
+  var QKEY = 'lab-inventory-queue-v1';  // 待送出的操作
+  var TKEY = 'lab-inventory-token-v1';  // 寫入密碼
+  var UKEY = 'lab-inventory-user-v1';   // 更新者名字，可留空
+
+  var SYNC = String(INVENTORY_SYNC_URL || '').trim();
+  var items = [], queue = [], token = '', who = '';
   var editingId = null;
+  var online = true;    // 最近一次與伺服器溝通是否成功
+  var busy = false;     // 佇列是否正在送出
 
   var $ = function (id) { return document.getElementById(id); };
   var form = $('inv-form'), body = $('inv-body');
 
-  function load() {
+  /* ---------- 儲存 ---------- */
+
+  function readLS(k, fallback) {
     try {
-      var raw = localStorage.getItem(KEY);
-      items = raw ? JSON.parse(raw) : [];
-      if (!Array.isArray(items)) items = [];
-    } catch (e) { items = []; }
+      var raw = localStorage.getItem(k);
+      if (!raw) return fallback;
+      var v = JSON.parse(raw);
+      return v == null ? fallback : v;
+    } catch (e) { return fallback; }
   }
-  function save() {
-    try {
-      localStorage.setItem(KEY, JSON.stringify(items));
-    } catch (e) {
-      alert('存檔失敗，瀏覽器儲存空間可能已滿或停用。請先匯出 CSV 備份。');
-    }
+  function writeLS(k, v) {
+    try { localStorage.setItem(k, JSON.stringify(v)); }
+    catch (e) { alert('存檔失敗，瀏覽器儲存空間可能已滿或停用。請先匯出 CSV 備份。'); }
   }
+
+  function loadAll() {
+    items = readLS(KEY, []);   if (!Array.isArray(items)) items = [];
+    queue = readLS(QKEY, []);  if (!Array.isArray(queue)) queue = [];
+    token = readLS(TKEY, '') || '';
+    who   = readLS(UKEY, '') || '';
+  }
+  function saveItems() { writeLS(KEY, items); }
+  function saveQueue() { writeLS(QKEY, queue); }
+
+  /* ---------- 小工具（沿用原本的） ---------- */
 
   function now() {
     var d = new Date(), p = function (n) { return String(n).padStart(2, '0'); };
@@ -1012,8 +1044,169 @@
   function same(a, cat, name, spec) {
     return norm(a.cat) === norm(cat) && norm(a.name) === norm(name) && norm(a.spec) === norm(spec);
   }
-  // 數量以小數存，顯示時去掉多餘的 .0
   function fmtQty(n) { return String(Math.round(n * 1000) / 1000); }
+  function newId() { return 'i' + Date.now() + Math.random().toString(36).slice(2, 7); }
+
+  /* ---------- 與伺服器溝通 ---------- */
+
+  function api(payload) {
+    if (payload === null) {
+      var sep = SYNC.indexOf('?') >= 0 ? '&' : '?';
+      return fetch(SYNC + sep + 'action=list', { method: 'GET' })
+        .then(function (r) { return r.json(); });
+    }
+    // 用 text/plain：它在 CORS 安全清單內，不會觸發 preflight。
+    // Apps Script 不處理 OPTIONS，一旦送出 preflight 整個請求就會失敗。
+    return fetch(SYNC, {
+      method: 'POST',
+      headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+      body: JSON.stringify(payload)
+    }).then(function (r) { return r.json(); });
+  }
+
+  function askToken() {
+    var t = prompt('第一次寫入需要實驗室共用的寫入密碼：');
+    if (t === null) return false;
+    t = t.trim();
+    if (!t) return false;
+    token = t; writeLS(TKEY, token);
+    if (!who) {
+      var n = prompt('順便留個名字，庫存變動會記錄是誰改的（可留空跳過）：');
+      who = (n || '').trim(); writeLS(UKEY, who);
+    }
+    return true;
+  }
+
+  function enqueue(action, payload) {
+    queue.push({ opId: 'o' + Date.now() + Math.random().toString(36).slice(2, 8),
+                 action: action, payload: payload });
+    saveQueue();
+    drain();
+  }
+
+  function drain() {
+    if (!SYNC || busy || !queue.length) return;
+    if (!token && !askToken()) { render(); return; }
+
+    busy = true;
+    var op = queue[0];
+    api({ opId: op.opId, action: op.action, payload: op.payload, token: token, by: who })
+      .then(function (res) {
+        if (!res || !res.ok) {
+          if (res && res.error === 'BAD_TOKEN') {
+            token = ''; writeLS(TKEY, '');
+            busy = false; render();
+            alert('寫入密碼不正確，請重新操作一次並輸入正確密碼。');
+            return;
+          }
+          throw new Error((res && res.error) || '伺服器回應異常');
+        }
+        queue.shift(); saveQueue();
+        items = res.items || [];      // 伺服器是權威，用它的結果覆蓋本機
+        saveItems();
+        online = true; busy = false;
+        render();
+        if (queue.length) drain();
+      })
+      .catch(function () {
+        online = false; busy = false;   // 留在佇列裡，回線再送
+        render();
+      });
+  }
+
+  function pull() {
+    if (!SYNC) return;
+    api(null)
+      .then(function (res) {
+        if (!res || !res.ok) throw new Error((res && res.error) || '讀取失敗');
+        online = true;
+        var remote = res.items || [];
+        // 不覆蓋保險：試算表是空的但本機有資料時，先問過再說
+        if (!remote.length && items.length && !queue.length) {
+          if (confirm('試算表目前是空的，但這台電腦有 ' + items.length + ' 筆庫存。\n\n' +
+                      '【確定】把本機資料上傳到試算表\n【取消】改用試算表的內容（本機這份會被清掉）')) {
+            enqueue('bulkUpload', { items: items, mode: 'replace' });
+            return;
+          }
+        }
+        items = remote; saveItems(); render();
+        if (queue.length) drain();
+      })
+      .catch(function () { online = false; render(); });
+  }
+
+  /* ---------- 本機套用（樂觀更新，讓離線也能操作） ---------- */
+
+  function applyLocal(action, p) {
+    var i, hit;
+    if (action === 'upsert') {
+      hit = null;
+      if (p.id) for (i = 0; i < items.length; i++) if (items[i].id === p.id) { hit = items[i]; break; }
+      if (hit) {
+        hit.cat = p.cat; hit.name = p.name; hit.spec = p.spec;
+        hit.qty = Math.max(0, Number(p.qty) || 0);
+        hit.unit = p.unit; hit.note = p.note; hit.updated = now(); hit.by = who;
+        return;
+      }
+      var merge = null;
+      for (i = 0; i < items.length; i++) if (same(items[i], p.cat, p.name, p.spec)) { merge = items[i]; break; }
+      if (merge) {
+        merge.qty = Math.max(0, (Number(merge.qty) || 0) + (Number(p.qty) || 0));
+        if (p.unit) merge.unit = p.unit;
+        if (p.note) merge.note = p.note;
+        merge.updated = now(); merge.by = who;
+      } else {
+        items.push({ id: p.id || newId(), cat: p.cat, name: p.name, spec: p.spec,
+                     qty: Math.max(0, Number(p.qty) || 0), unit: p.unit, note: p.note,
+                     updated: now(), by: who });
+      }
+    } else if (action === 'adjust') {
+      for (i = 0; i < items.length; i++) if (items[i].id === p.id) {
+        items[i].qty = Math.max(0, (Number(items[i].qty) || 0) + (Number(p.delta) || 0));
+        items[i].updated = now(); items[i].by = who; break;
+      }
+    } else if (action === 'delete') {
+      items = items.filter(function (it) { return it.id !== p.id; });
+    } else if (action === 'bulkUpload') {
+      var incoming = (p.items || []).map(function (it) {
+        return { id: it.id || newId(), cat: it.cat, name: it.name, spec: it.spec,
+                 qty: Math.max(0, Number(it.qty) || 0), unit: it.unit, note: it.note,
+                 updated: it.updated || now(), by: who };
+      });
+      if (p.mode === 'replace') { items = incoming; }
+      else {
+        incoming.forEach(function (inc) {
+          var m = null;
+          for (var x = 0; x < items.length; x++) if (same(items[x], inc.cat, inc.name, inc.spec)) { m = items[x]; break; }
+          if (m) {
+            m.qty = Math.max(0, (Number(m.qty) || 0) + inc.qty);
+            if (inc.unit) m.unit = inc.unit;
+            if (inc.note) m.note = inc.note;
+            m.updated = now(); m.by = who;
+          } else { items.push(inc); }
+        });
+      }
+    } else if (action === 'clearAll') {
+      items = [];
+    }
+  }
+
+  // 所有變更都走這一條：本機先套用讓畫面即時反應，再排進佇列送出
+  function apply(action, payload) {
+    applyLocal(action, payload);
+    saveItems();
+    render();
+    if (SYNC) enqueue(action, payload);
+  }
+
+  /* ---------- 畫面 ---------- */
+
+  function statusText() {
+    if (!SYNC) return '存本機瀏覽器';
+    if (!online) return queue.length ? ('離線 · ' + queue.length + ' 筆待同步') : '離線';
+    if (queue.length) return !token ? '需要密碼' : '同步中…';
+    return '已同步';
+  }
 
   function render() {
     var kw = norm($('inv-search').value);
@@ -1028,7 +1221,6 @@
     rows.forEach(function (it) {
       var tr = document.createElement('tr');
       if (it.id === editingId) tr.className = 'editing';
-
       var td = function (child) { var c = document.createElement('td'); if (child != null) c.append(child); tr.append(c); return c; };
 
       var pill = document.createElement('span');
@@ -1046,13 +1238,13 @@
       var minus = document.createElement('button');
       minus.type = 'button'; minus.className = 'stepper'; minus.textContent = '−';
       minus.title = '減 1'; minus.setAttribute('aria-label', it.name + ' 減 1');
-      minus.onclick = function () { step(it.id, -1); };
+      minus.onclick = function () { apply('adjust', { id: it.id, delta: -1 }); };
       var num = document.createElement('span');
       num.className = 'num'; num.textContent = fmtQty(it.qty) + ' ' + (it.unit || '');
       var plus = document.createElement('button');
       plus.type = 'button'; plus.className = 'stepper'; plus.textContent = '+';
       plus.title = '加 1'; plus.setAttribute('aria-label', it.name + ' 加 1');
-      plus.onclick = function () { step(it.id, 1); };
+      plus.onclick = function () { apply('adjust', { id: it.id, delta: 1 }); };
       box.append(minus, num, plus);
       qtyCell.append(box);
 
@@ -1061,6 +1253,7 @@
 
       var timeCell = td(it.updated || '—');
       timeCell.className = 'muted';
+      if (it.by) { timeCell.append(document.createElement('br')); timeCell.append(it.by); }
 
       var actCell = td();
       var act = document.createElement('div'); act.className = 'rowact';
@@ -1089,32 +1282,27 @@
       ? '共 ' + totalKinds + ' 種品項（顯示 ' + rows.length + ' 筆）｜' + parts.join('、')
       : '';
 
-    // 標尺與首頁入口卡上的「量」
     var meta = totalKinds ? totalKinds + ' 種品項' : '尚未建立';
-    ['inv-meta', 'home-inv-meta'].forEach(function (id) {
-      var el = $(id); if (el) el.textContent = meta;
-    });
+    var m1 = $('inv-meta');      if (m1) m1.textContent = statusText() + ' · ' + meta;
+    var m2 = $('home-inv-meta'); if (m2) m2.textContent = meta;
   }
 
-  function step(id, d) {
-    var it = items.find(function (x) { return x.id === id; });
-    if (!it) return;
-    it.qty = Math.max(0, (Number(it.qty) || 0) + d);
-    it.updated = now();
-    save(); render();
-  }
+  /* ---------- 操作 ---------- */
 
   function remove(id) {
-    var it = items.find(function (x) { return x.id === id; });
+    var it = null;
+    for (var i = 0; i < items.length; i++) if (items[i].id === id) { it = items[i]; break; }
     if (!it) return;
-    if (!confirm('確定刪除「' + it.name + (it.spec ? ' ' + it.spec : '') + '」？')) return;
-    items = items.filter(function (x) { return x.id !== id; });
+    var msg = '確定刪除「' + it.name + (it.spec ? ' ' + it.spec : '') + '」？';
+    if (SYNC) msg += '\n\n這會從全實驗室共用的試算表刪掉，其他人也會看不到。';
+    if (!confirm(msg)) return;
     if (editingId === id) resetForm();
-    save(); render();
+    apply('delete', { id: id });
   }
 
   function startEdit(id) {
-    var it = items.find(function (x) { return x.id === id; });
+    var it = null;
+    for (var i = 0; i < items.length; i++) if (items[i].id === id) { it = items[i]; break; }
     if (!it) return;
     editingId = id;
     $('inv-cat').value = it.cat;
@@ -1141,38 +1329,19 @@
 
   form.addEventListener('submit', function (e) {
     e.preventDefault();
-    var cat = $('inv-cat').value;
-    var name = $('inv-name').value.trim();
-    var spec = $('inv-spec').value.trim();
-    var qty = Number($('inv-qty').value);
-    var unit = $('inv-unit').value.trim();
-    var note = $('inv-note').value.trim();
-    if (!name) { alert('請填品項名稱'); return; }
-    if (!isFinite(qty)) { alert('數量請填數字'); return; }
-
-    if (editingId) {
-      var it = items.find(function (x) { return x.id === editingId; });
-      if (it) {
-        it.cat = cat; it.name = name; it.spec = spec;
-        it.qty = Math.max(0, qty); it.unit = unit; it.note = note; it.updated = now();
-      }
-    } else {
-      var hit = items.find(function (x) { return same(x, cat, name, spec); });
-      if (hit) {
-        hit.qty = Math.max(0, (Number(hit.qty) || 0) + qty);
-        hit.unit = unit || hit.unit;
-        if (note) hit.note = note;
-        hit.updated = now();
-      } else {
-        items.push({
-          id: 'i' + Date.now() + Math.random().toString(36).slice(2, 7),
-          cat: cat, name: name, spec: spec,
-          qty: Math.max(0, qty), unit: unit, note: note, updated: now()
-        });
-      }
-    }
+    var p = {
+      cat: $('inv-cat').value,
+      name: $('inv-name').value.trim(),
+      spec: $('inv-spec').value.trim(),
+      qty: Number($('inv-qty').value),
+      unit: $('inv-unit').value.trim(),
+      note: $('inv-note').value.trim()
+    };
+    if (!p.name) { alert('請填品項名稱'); return; }
+    if (!isFinite(p.qty)) { alert('數量請填數字'); return; }
+    if (editingId) p.id = editingId;   // 有 id＝改這一筆；沒有＝新增或累加
     resetForm();
-    save(); render();
+    apply('upsert', p);
   });
 
   $('inv-cancel').onclick = function () { resetForm(); render(); };
@@ -1181,11 +1350,15 @@
 
   $('inv-clear').onclick = function () {
     if (!items.length) return;
-    if (!confirm('這會刪掉全部 ' + items.length + ' 筆盤點資料，且無法復原。\n建議先匯出 CSV 備份。確定清空？')) return;
-    items = []; resetForm(); save(); render();
+    var msg = '這會刪掉全部 ' + items.length + ' 筆盤點資料，且無法復原。\n建議先匯出 CSV 備份。';
+    if (SYNC) msg += '\n\n注意：清的是全實驗室共用的試算表，所有人的畫面都會清空。';
+    if (!confirm(msg + '\n\n確定清空？')) return;
+    resetForm();
+    apply('clearAll', {});
   };
 
-  /* ---- CSV ---- */
+  /* ---------- CSV ---------- */
+
   var HEAD = ['類別', '品項', '顏色／規格', '數量', '單位', '備註', '最後更新'];
 
   function csvCell(v) {
@@ -1237,48 +1410,49 @@
     reader.onload = function () {
       var rows = parseCSV(String(reader.result));
       if (rows.length < 2) { alert('這個 CSV 沒有可讀的資料列。'); $('inv-import').value = ''; return; }
-      var merge = items.length
-        ? confirm('要跟現有的 ' + items.length + ' 筆資料合併嗎？\n\n【確定】合併（相同品項數量相加）\n【取消】清掉現有資料，只留 CSV 內容')
-        : true;
-      if (!merge) items = [];
-
-      var added = 0, merged = 0;
+      var mode = 'merge';
+      if (items.length) {
+        mode = confirm('要跟現有的 ' + items.length + ' 筆資料合併嗎？\n\n' +
+                       '【確定】合併（相同品項數量相加）\n【取消】清掉現有資料，只留 CSV 內容')
+               ? 'merge' : 'replace';
+      }
+      var incoming = [];
       rows.slice(1).forEach(function (r) {
-        var cat = (r[0] || '其他').trim();
         var name = (r[1] || '').trim();
         if (!name) return;
-        var spec = (r[2] || '').trim();
         var qty = Number((r[3] || '0').trim()); if (!isFinite(qty)) qty = 0;
-        var unit = (r[4] || '').trim();
-        var note = (r[5] || '').trim();
-        var updated = (r[6] || '').trim() || now();
-
-        var hit = items.find(function (x) { return same(x, cat, name, spec); });
-        if (hit) {
-          hit.qty = Math.max(0, (Number(hit.qty) || 0) + qty);
-          if (unit) hit.unit = unit;
-          if (note) hit.note = note;
-          hit.updated = updated;
-          merged++;
-        } else {
-          items.push({
-            id: 'i' + Date.now() + Math.random().toString(36).slice(2, 7),
-            cat: cat, name: name, spec: spec, qty: Math.max(0, qty),
-            unit: unit, note: note, updated: updated
-          });
-          added++;
-        }
+        incoming.push({ cat: (r[0] || '其他').trim(), name: name, spec: (r[2] || '').trim(),
+                        qty: qty, unit: (r[4] || '').trim(), note: (r[5] || '').trim(),
+                        updated: (r[6] || '').trim() || now() });
       });
-      save(); render();
-      alert('匯入完成：新增 ' + added + ' 筆、累加 ' + merged + ' 筆。');
+      if (!incoming.length) { alert('這個 CSV 沒有可讀的資料列。'); $('inv-import').value = ''; return; }
+      var before = items.length;
+      apply('bulkUpload', { items: incoming, mode: mode });
+      alert('匯入完成：讀進 ' + incoming.length + ' 筆，目前共 ' + items.length + ' 種品項（原本 ' + before + ' 種）。');
       $('inv-import').value = '';
     };
     reader.onerror = function () { alert('讀取檔案失敗。'); $('inv-import').value = ''; };
     reader.readAsText(file, 'UTF-8');
   };
 
-  load();
+  /* ---------- 啟動 ---------- */
+
+  loadAll();
   render();
+
+  if (SYNC) {
+    var localNote = $('inv-note-local'), syncNote = $('inv-note-sync');
+    if (localNote) localNote.hidden = true;
+    if (syncNote) syncNote.hidden = false;
+
+    pull();
+    // 每次切回盤點頁重新抓一次，別人改過的才看得到
+    window.addEventListener('hashchange', function () {
+      if (location.hash === '#inventory') pull();
+    });
+    window.addEventListener('online', function () { online = true; drain(); render(); });
+    window.addEventListener('offline', function () { online = false; render(); });
+  }
 })();
 </script>
 
