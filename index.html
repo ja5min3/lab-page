@@ -492,14 +492,14 @@
             </select>
           </div>
           <div class="inv-field">
-            <label for="inv-name">品名</label>
-            <input id="inv-name" list="inv-name-list" placeholder="例：PLA" required>
-            <datalist id="inv-name-list"></datalist>
+            <label for="inv-name-sel">品名</label>
+            <select id="inv-name-sel"></select>
+            <input id="inv-name" placeholder="打新的品名" hidden>
           </div>
           <div class="inv-field">
-            <label for="inv-spec">顏色／規格</label>
-            <input id="inv-spec" list="inv-spec-list" placeholder="例：黑色 / 0.4mm">
-            <datalist id="inv-spec-list"></datalist>
+            <label for="inv-spec-sel">顏色／規格</label>
+            <select id="inv-spec-sel"></select>
+            <input id="inv-spec" placeholder="打新的顏色／規格" hidden>
           </div>
           <div class="inv-field">
             <label for="inv-qty">數量</label>
@@ -1173,10 +1173,60 @@
   function norm(s) { return String(s == null ? '' : s).trim().toLowerCase(); }
   function fmtQty(n) { return String(Math.round(Number(n) * 1000) / 1000); }
 
-  /* ---------- 表單的候選清單，直接從現有資料長出來 ---------- */
+  /* ---------- 品名／顏色規格：真的下拉選單，最後一項可以自己打 ----------
+     用 <select> 而不是 <input list=...>：後者長得像選單，但清單會被已輸入的字
+     過濾掉，看起來像「只剩一個選項」，實際踩過這個坑。
+     真正的值一律以隱藏的 <input> 為準，readForm 只讀它。 */
+  function uniqueValues(key) {
+    var seen = {}, vals = [];
+    items.forEach(function (it) {
+      var v = String(it[key] || '').trim();
+      if (v && !seen[v]) { seen[v] = 1; vals.push(v); }
+    });
+    return vals.sort();
+  }
+
+  function fillPicker(selId, inputId, key) {
+    var sel = $(selId);
+    var keep = $(inputId).value;
+    sel.textContent = '';
+    var blank = document.createElement('option');
+    blank.value = ''; blank.textContent = '請選擇';
+    sel.append(blank);
+    uniqueValues(key).forEach(function (v) {
+      var o = document.createElement('option');
+      o.value = v; o.textContent = v; sel.append(o);
+    });
+    var other = document.createElement('option');
+    other.value = '__new__'; other.textContent = '＋ 其他（自己打）';
+    sel.append(other);
+    syncPicker(selId, inputId, keep);
+  }
+
+  // 把某個值套到「選單＋自己打」這組欄位上：清單裡有就選它，沒有就切成自己打
+  function syncPicker(selId, inputId, value) {
+    var sel = $(selId), inp = $(inputId);
+    value = value || '';
+    var known = Array.prototype.some.call(sel.options, function (o) { return o.value === value; });
+    if (value && known) { sel.value = value; inp.hidden = true; }
+    else if (value)     { sel.value = '__new__'; inp.hidden = false; }
+    else                { sel.value = ''; inp.hidden = true; }
+    inp.value = value;
+  }
+
+  [['inv-name-sel', 'inv-name'], ['inv-spec-sel', 'inv-spec']].forEach(function (pair) {
+    $(pair[0]).onchange = function () {
+      var sel = $(pair[0]), inp = $(pair[1]);
+      if (sel.value === '__new__') { inp.hidden = false; inp.value = ''; inp.focus(); }
+      else { inp.hidden = true; inp.value = sel.value; }
+    };
+  });
+
+  /* ---------- 品牌／材質仍用輸入建議：這兩格常常要微調，打字比較快 ---------- */
   function fillDatalists() {
-    [['inv-name-list', 'name'], ['inv-spec-list', 'spec'],
-     ['inv-brand-list', 'brand'], ['inv-material-list', 'material']].forEach(function (pair) {
+    fillPicker('inv-name-sel', 'inv-name', 'name');
+    fillPicker('inv-spec-sel', 'inv-spec', 'spec');
+    [['inv-brand-list', 'brand'], ['inv-material-list', 'material']].forEach(function (pair) {
       var el = $(pair[0]); if (!el) return;
       var seen = {}, vals = [];
       items.forEach(function (it) {
@@ -1324,8 +1374,8 @@
     if (!it) return;
     editingId = id;
     $('inv-cat').value = it.cat;
-    $('inv-name').value = it.name;
-    $('inv-spec').value = it.spec;
+    syncPicker('inv-name-sel', 'inv-name', it.name);
+    syncPicker('inv-spec-sel', 'inv-spec', it.spec);
     $('inv-qty').value = it.qty;
     $('inv-unit').value = it.unit;
     $('inv-code').value = it.code;
@@ -1344,6 +1394,8 @@
   function resetForm() {
     editingId = null;
     form.reset();
+    syncPicker('inv-name-sel', 'inv-name', '');
+    syncPicker('inv-spec-sel', 'inv-spec', '');
     $('inv-qty').value = 1;
     $('inv-unit').value = '捲';
     $('inv-form-title').textContent = '新增／入庫';
@@ -1361,7 +1413,7 @@
   form.addEventListener('submit', function (e) {
     e.preventDefault();
     var it = readForm();
-    if (!it.name) { sync('error', '請填品名'); return; }
+    if (!it.name) { sync('error', '請先選品名（新品項請選「＋ 其他（自己打）」）'); return; }
     if (!isFinite(it.qty)) { sync('error', '數量請填數字'); return; }
     var editing = editingId;
     push({ action: editing ? 'update' : 'add', id: editing, item: it })

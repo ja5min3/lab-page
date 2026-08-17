@@ -65,8 +65,11 @@ Apps Script（原始碼在 vault 的 `50_實驗室資料/耗材盤點_AppsScript
 **JS 以 `getElementById` 抓的 DOM id**
 
 - 連線狀態：`inv-sync` `inv-sync-text` `inv-reload`
-- 表單：`inv-form` `inv-cat` `inv-name` `inv-spec` `inv-qty` `inv-unit`
+- 表單：`inv-form` `inv-form-title` `inv-cat` `inv-qty` `inv-unit`
   `inv-code` `inv-brand` `inv-material` `inv-note` `inv-submit` `inv-cancel`
+- 品名與顏色規格是「下拉選單＋自己打」兩件一組，**兩個 id 都不能拆開改**：
+  `inv-name-sel` ／ `inv-name`、`inv-spec-sel` ／ `inv-spec`
+  （選單只是介面，真正送出的值一律讀那個隱藏的 `<input>`）
 - 工具列：`inv-search` `inv-filter` `inv-lowonly` `inv-export` `inv-sheet-link`
 - 操作者欄位：`inv-who` `inv-pw`
 - 清單與統計：`inv-body` `inv-empty` `inv-summary`
@@ -77,9 +80,13 @@ Apps Script（原始碼在 vault 的 `50_實驗室資料/耗材盤點_AppsScript
 
 **HTML `list=` 指向的 datalist id** —— 換掉輸入建議會消失，不會報錯
 
-- `inv-name-list` `inv-spec-list` `inv-unit-list` `inv-brand-list` `inv-material-list`
-  （除了 `inv-unit-list`，其餘選項都是從現有資料動態長出來的，
+- `inv-unit-list`（單位，選項寫死在 HTML）
+- `inv-brand-list` `inv-material-list`（品牌與材質，選項從現有資料動態長出來，
   HTML 裡是空的，不要以為沒用到）
+
+品名與顏色規格**刻意不用 datalist**：`<input list=...>` 長得像選單，但清單會被
+已輸入的字過濾，欄位有值時看起來像「只剩一個選項」，實際造成過誤解。改用真正的
+`<select>`，最後一項 `__new__`（＋ 其他（自己打））才切換到文字輸入。
 
 **CSS 選擇器用到的 id** —— 換掉排版會跑掉
 
