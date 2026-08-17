@@ -481,7 +481,7 @@
       </div>
 
       <div class="card">
-        <h3>新增／入庫</h3>
+        <h3 id="inv-form-title">新增／入庫</h3>
         <form class="inv-form" id="inv-form" autocomplete="off">
           <div class="inv-field">
             <label for="inv-cat">分類</label>
@@ -1332,6 +1332,8 @@
     $('inv-brand').value = it.brand;
     $('inv-material').value = it.material;
     $('inv-note').value = it.note;
+    // 編輯跟新增共用同一個框，標題不跟著變的話會誤以為是要新增一筆
+    $('inv-form-title').textContent = '修改：' + it.name + (it.spec ? '　' + it.spec : '');
     $('inv-submit').textContent = '儲存修改';
     $('inv-cancel').hidden = false;
     render();
@@ -1344,6 +1346,7 @@
     form.reset();
     $('inv-qty').value = 1;
     $('inv-unit').value = '捲';
+    $('inv-form-title').textContent = '新增／入庫';
     $('inv-submit').textContent = '新增／累加';
     $('inv-cancel').hidden = true;
   }
