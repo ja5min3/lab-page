@@ -34,39 +34,52 @@
 | `#d-exam` | 使用考核制度 |
 | `#inventory` | 耗材盤點 |
 | `#safety` `#d-check` | 安全與檢查、自主檢查八項 |
+| `#assets` | 財產清冊（唯讀） |
 | `#waste` `#buy` `#members` `#rules` | 廢液、採購、成員、其他規則 |
 
 路由是漸進增強的：CSS 預設顯示所有區塊，JS 啟動後才隱藏非當前分頁。
 **停用 JavaScript 時會退回一頁到底的長捲頁，不會變空白。**
 
-## 耗材盤點的資料存在哪裡
+## 耗材盤點與財產清冊的資料存在哪裡
 
-這是靜態頁面，沒有伺服器。盤點資料存在**瀏覽器的 localStorage**，
-key 為 `lab-inventory-v1`，綁定瀏覽器與網址。
+**2026-08-17 起改為雲端共用**（之前存在瀏覽器 localStorage，換電腦或換輪值的人資料就消失）。
 
-- 只有在同一台電腦、同一個瀏覽器看得到，換人或換機器不會同步
-- 清除瀏覽器資料會一併清掉
-- **備份與交接靠頁面上的「匯出 CSV」**，到新的地方用「匯入 CSV」讀回來
+頁面仍然是靜態的，沒有自己的伺服器；讀寫改成打一支掛在 Google 試算表上的
+Apps Script（原始碼在 vault 的 `50_實驗室資料/耗材盤點_AppsScript.gs`）。
 
-改動 `index.html` 時，以下不能更名，否則使用者已輸入的庫存會讀不到或功能失效。
-三類的壞法不一樣，改之前先看清楚是哪一類：
+| 資料 | 來源 | 網頁能做什麼 |
+|---|---|---|
+| 耗材盤點 | 試算表「3D_列印線材分類」的 **耗材** 分頁 | 讀 ＋ 寫 |
+| 低庫存門檻 | 同一份試算表的 **設定** 分頁 | 讀 |
+| 財產清冊 | 試算表「210財產」的 財產／保管品 分頁 | 唯讀 |
 
-**localStorage key** —— 換掉等於所有既有庫存讀不回來
+- 後端網址寫在 `index.html` 的 `var API = '…'`。重新部署 Apps Script 會產生新網址，
+  換掉這一行即可。
+- 只讀不需驗證；每次寫入都會記錄「最後更新」與「更新者」。
+- 寫入需通過 Apps Script 端的驗證，相關設定只留在 `.gs`，這個 repo 裡不放。
+- 「最後更新」欄在試算表裡是**純文字格式**。改成日期格式會被時區換算搞亂
+  （曾經差 15 小時、日期跳到隔天），修法見 `.gs` 裡的 `fixTime()`。
 
-- `lab-inventory-v1`
+改動 `index.html` 時，以下不能更名，否則功能會壞掉或靜默失效：
 
-**JS 以 `getElementById` 抓的 DOM id** —— 換掉會直接壞掉或靜默失效
+**JS 以 `getElementById` 抓的 DOM id**
 
-- 表單與工具列：`inv-form` `inv-cat` `inv-name` `inv-spec` `inv-qty` `inv-unit`
-  `inv-note` `inv-submit` `inv-cancel` `inv-search` `inv-filter`
-  `inv-export` `inv-import` `inv-import-btn` `inv-clear`
+- 連線狀態：`inv-sync` `inv-sync-text` `inv-reload`
+- 表單：`inv-form` `inv-cat` `inv-name` `inv-spec` `inv-qty` `inv-unit`
+  `inv-code` `inv-brand` `inv-material` `inv-note` `inv-submit` `inv-cancel`
+- 工具列：`inv-search` `inv-filter` `inv-lowonly` `inv-export` `inv-sheet-link`
+- 操作者欄位：`inv-who` `inv-pw`
 - 清單與統計：`inv-body` `inv-empty` `inv-summary`
-- 標尺與首頁入口卡上的品項數：`inv-meta` `home-inv-meta`
-  （這兩個是「找不到就跳過」的寫法，改名不會報錯，只會安靜地不再更新，特別容易漏掉）
+- 財產清冊：`asset-search` `asset-tables` `asset-empty`
+- 標尺與首頁入口卡：`inv-meta` `home-inv-meta` `asset-meta` `home-asset-meta`
+  （這四個是「找不到就跳過」的寫法，改名不會報錯，只會安靜地不再更新，特別容易漏掉）
+- 頁尾自動日期：`site-updated`
 
 **HTML `list=` 指向的 datalist id** —— 換掉輸入建議會消失，不會報錯
 
-- `inv-name-list` `inv-spec-list` `inv-unit-list`
+- `inv-name-list` `inv-spec-list` `inv-unit-list` `inv-brand-list` `inv-material-list`
+  （除了 `inv-unit-list`，其餘選項都是從現有資料動態長出來的，
+  HTML 裡是空的，不要以為沒用到）
 
 **CSS 選擇器用到的 id** —— 換掉排版會跑掉
 
