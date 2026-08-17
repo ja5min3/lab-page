@@ -1177,9 +1177,13 @@
      用 <select> 而不是 <input list=...>：後者長得像選單，但清單會被已輸入的字
      過濾掉，看起來像「只剩一個選項」，實際踩過這個坑。
      真正的值一律以隱藏的 <input> 為準，readForm 只讀它。 */
+  // 只列「目前這個分類」用過的值：三類混在一起會讓選 PLA 線圈時
+  // 還要在噴頭的 0.2mm、1PCS 之間翻找
   function uniqueValues(key) {
+    var cat = $('inv-cat').value;
     var seen = {}, vals = [];
     items.forEach(function (it) {
+      if (cat && it.cat !== cat) return;
       var v = String(it[key] || '').trim();
       if (v && !seen[v]) { seen[v] = 1; vals.push(v); }
     });
@@ -1214,6 +1218,11 @@
     inp.value = value;
   }
 
+  function refillPickers() {
+    fillPicker('inv-name-sel', 'inv-name', 'name');
+    fillPicker('inv-spec-sel', 'inv-spec', 'spec');
+  }
+
   [['inv-name-sel', 'inv-name'], ['inv-spec-sel', 'inv-spec']].forEach(function (pair) {
     $(pair[0]).onchange = function () {
       var sel = $(pair[0]), inp = $(pair[1]);
@@ -1222,10 +1231,16 @@
     };
   });
 
+  // 換分類 → 選項跟著換；順便把單位切成該類的常用值（編輯中不動，免得改壞既有資料）
+  $('inv-cat').onchange = function () {
+    $('inv-name').value = ''; $('inv-spec').value = '';
+    refillPickers();
+    if (!editingId) $('inv-unit').value = $('inv-cat').value === '其他' ? '個' : '捲';
+  };
+
   /* ---------- 品牌／材質仍用輸入建議：這兩格常常要微調，打字比較快 ---------- */
   function fillDatalists() {
-    fillPicker('inv-name-sel', 'inv-name', 'name');
-    fillPicker('inv-spec-sel', 'inv-spec', 'spec');
+    refillPickers();
     [['inv-brand-list', 'brand'], ['inv-material-list', 'material']].forEach(function (pair) {
       var el = $(pair[0]); if (!el) return;
       var seen = {}, vals = [];
@@ -1374,8 +1389,10 @@
     if (!it) return;
     editingId = id;
     $('inv-cat').value = it.cat;
-    syncPicker('inv-name-sel', 'inv-name', it.name);
-    syncPicker('inv-spec-sel', 'inv-spec', it.spec);
+    // 先塞值再重建選項：選項是依分類過濾的，順序反了會找不到自己的品名
+    $('inv-name').value = it.name;
+    $('inv-spec').value = it.spec;
+    refillPickers();
     $('inv-qty').value = it.qty;
     $('inv-unit').value = it.unit;
     $('inv-code').value = it.code;
@@ -1394,8 +1411,8 @@
   function resetForm() {
     editingId = null;
     form.reset();
-    syncPicker('inv-name-sel', 'inv-name', '');
-    syncPicker('inv-spec-sel', 'inv-spec', '');
+    $('inv-name').value = ''; $('inv-spec').value = '';
+    refillPickers();
     $('inv-qty').value = 1;
     $('inv-unit').value = '捲';
     $('inv-form-title').textContent = '新增／入庫';
