@@ -486,9 +486,8 @@
           <div class="inv-field">
             <label for="inv-cat">分類</label>
             <select id="inv-cat">
-              <option value="PLA線圈">PLA線圈</option>
-              <option value="其他線圈">其他線圈</option>
-              <option value="其他">其他</option>
+              <option value="線圈">線圈</option>
+              <option value="其他耗材">其他耗材</option>
             </select>
           </div>
           <div class="inv-field">
@@ -506,30 +505,23 @@
             <input id="inv-qty" type="number" step="any" value="1" required>
           </div>
           <div class="inv-field">
-            <label for="inv-unit">單位</label>
-            <input id="inv-unit" list="inv-unit-list" placeholder="捲" value="捲">
-            <datalist id="inv-unit-list">
-              <option value="捲"><option value="個"><option value="條"><option value="盒">
-              <option value="瓶"><option value="包"><option value="組"><option value="公克">
-            </datalist>
+            <label for="inv-unit-sel">單位</label>
+            <select id="inv-unit-sel"></select>
+            <input id="inv-unit" placeholder="打新的單位" hidden>
           </div>
           <div class="inv-field">
-            <label for="inv-code">耗材編號</label>
-            <input id="inv-code" placeholder="例：10101">
+            <label for="inv-brand-sel">品牌</label>
+            <select id="inv-brand-sel"></select>
+            <input id="inv-brand" placeholder="打新的品牌" hidden>
           </div>
           <div class="inv-field">
-            <label for="inv-brand">品牌</label>
-            <input id="inv-brand" list="inv-brand-list" placeholder="例：BAMBULAB">
-            <datalist id="inv-brand-list"></datalist>
-          </div>
-          <div class="inv-field">
-            <label for="inv-material">材質</label>
-            <input id="inv-material" list="inv-material-list" placeholder="例：塑膠Basic">
-            <datalist id="inv-material-list"></datalist>
+            <label for="inv-place-sel">存放位置</label>
+            <select id="inv-place-sel"></select>
+            <input id="inv-place" placeholder="打新的位置" hidden>
           </div>
           <div class="inv-field full">
-            <label for="inv-note">備註（放置位置…）</label>
-            <input id="inv-note" placeholder="例：防潮箱第二層">
+            <label for="inv-note">備註</label>
+            <input id="inv-note" placeholder="例：只剩半捲、要優先用掉">
           </div>
           <div class="inv-field full" style="flex-direction:row;gap:8px;flex-wrap:wrap">
             <button class="btn" type="submit" id="inv-submit">新增／累加</button>
@@ -546,9 +538,8 @@
           <input id="inv-search" class="grow" type="search" placeholder="搜尋品名／顏色／品牌／備註">
           <select id="inv-filter" style="width:auto">
             <option value="">全部分類</option>
-            <option value="PLA線圈">PLA線圈</option>
-            <option value="其他線圈">其他線圈</option>
-            <option value="其他">其他</option>
+            <option value="線圈">線圈</option>
+            <option value="其他耗材">其他耗材</option>
           </select>
           <label class="muted" style="display:flex;align-items:center;gap:6px;white-space:nowrap">
             <input type="checkbox" id="inv-lowonly" style="width:auto"> 只看快沒了的
@@ -561,8 +552,8 @@
         <table id="inv-table">
           <thead>
             <tr>
-              <th>分類</th><th>品名</th><th>顏色／規格</th><th>材質</th><th>數量</th>
-              <th>備註</th><th>最後更新</th><th></th>
+              <th>分類</th><th>品名</th><th>顏色／規格</th><th>數量</th>
+              <th>存放位置</th><th>備註</th><th>最後更新</th><th></th>
             </tr>
           </thead>
           <tbody id="inv-body"></tbody>
@@ -1072,7 +1063,7 @@
 
   /* 後端網址：試算表的「擴充功能 → Apps Script → 部署」產生的網頁應用程式網址。
      之後如果重新部署出新網址，換掉這一行就好。 */
-  var API = 'https://script.google.com/macros/s/AKfycbzuoWVyKcUM6bKPTSaLww0AaiipPqHaLhbQzpN0t6jkEhCUhfHID1n7DETy6EiHXHz0JA/exec';
+  var API = 'https://script.google.com/macros/s/AKfycby5jiTL6MHHqMECmD8tYUuMjsWVmPyUVe5-Me-mcsI0-Eus9YGiRKXMkwEv2di1WkvVaw/exec';
   /* 耗材試算表（給「開啟試算表」按鈕用） */
   var SHEET_URL = 'https://docs.google.com/spreadsheets/d/1o62ajLUK5kcn9uaI53GGkZUCqqnDHrC8AzTxGSu28QM/edit';
 
@@ -1157,7 +1148,7 @@
     if (d.items)    items = d.items;
     if (d.config)   config = d.config;
     if (d.property) { property = d.property; renderProperty(); }
-    fillDatalists();
+    refillPickers();
     render();
   }
 
@@ -1190,14 +1181,19 @@
     return vals.sort();
   }
 
-  function fillPicker(selId, inputId, key) {
+  // preset：不管資料裡有沒有都要出現的固定選項（例如存放位置的三個櫃子）
+  function fillPicker(selId, inputId, key, preset) {
     var sel = $(selId);
     var keep = $(inputId).value;
+    var seen = {}, vals = [];
+    (preset || []).concat(uniqueValues(key)).forEach(function (v) {
+      if (v && !seen[v]) { seen[v] = 1; vals.push(v); }
+    });
     sel.textContent = '';
     var blank = document.createElement('option');
     blank.value = ''; blank.textContent = '請選擇';
     sel.append(blank);
-    uniqueValues(key).forEach(function (v) {
+    vals.forEach(function (v) {
       var o = document.createElement('option');
       o.value = v; o.textContent = v; sel.append(o);
     });
@@ -1218,12 +1214,23 @@
     inp.value = value;
   }
 
+  // 固定選項：就算資料裡還沒出現過也要能選
+  var PRESET_UNIT  = { '線圈': ['捲'], '其他耗材': ['個', '組', '盒', '包'] };
+  var PRESET_BRAND = ['拓竹Bambu lab'];
+  var PRESET_PLACE = ['乾燥箱', '好拿的箱子', '紙箱'];
+
   function refillPickers() {
-    fillPicker('inv-name-sel', 'inv-name', 'name');
-    fillPicker('inv-spec-sel', 'inv-spec', 'spec');
+    var cat = $('inv-cat').value;
+    fillPicker('inv-name-sel',  'inv-name',  'name');
+    fillPicker('inv-spec-sel',  'inv-spec',  'spec');
+    fillPicker('inv-unit-sel',  'inv-unit',  'unit',  PRESET_UNIT[cat] || []);
+    fillPicker('inv-brand-sel', 'inv-brand', 'brand', PRESET_BRAND);
+    fillPicker('inv-place-sel', 'inv-place', 'place', PRESET_PLACE);
   }
 
-  [['inv-name-sel', 'inv-name'], ['inv-spec-sel', 'inv-spec']].forEach(function (pair) {
+  [['inv-name-sel', 'inv-name'], ['inv-spec-sel', 'inv-spec'],
+   ['inv-unit-sel', 'inv-unit'], ['inv-brand-sel', 'inv-brand'],
+   ['inv-place-sel', 'inv-place']].forEach(function (pair) {
     $(pair[0]).onchange = function () {
       var sel = $(pair[0]), inp = $(pair[1]);
       if (sel.value === '__new__') { inp.hidden = false; inp.value = ''; inp.focus(); }
@@ -1234,27 +1241,10 @@
   // 換分類 → 選項跟著換；順便把單位切成該類的常用值（編輯中不動，免得改壞既有資料）
   $('inv-cat').onchange = function () {
     $('inv-name').value = ''; $('inv-spec').value = '';
+    // 單位跟著分類走：線圈算捲、其他耗材算個。編輯中不動，免得改壞既有資料
+    if (!editingId) $('inv-unit').value = $('inv-cat').value === '線圈' ? '捲' : '個';
     refillPickers();
-    if (!editingId) $('inv-unit').value = $('inv-cat').value === '其他' ? '個' : '捲';
   };
-
-  /* ---------- 品牌／材質仍用輸入建議：這兩格常常要微調，打字比較快 ---------- */
-  function fillDatalists() {
-    refillPickers();
-    [['inv-brand-list', 'brand'], ['inv-material-list', 'material']].forEach(function (pair) {
-      var el = $(pair[0]); if (!el) return;
-      var seen = {}, vals = [];
-      items.forEach(function (it) {
-        var v = String(it[pair[1]] || '').trim();
-        if (v && !seen[v]) { seen[v] = 1; vals.push(v); }
-      });
-      vals.sort();
-      el.textContent = '';
-      vals.forEach(function (v) {
-        var o = document.createElement('option'); o.value = v; el.append(o);
-      });
-    });
-  }
 
   /* ---------- 畫表格 ---------- */
   function render() {
@@ -1266,7 +1256,7 @@
       if (cat && it.cat !== cat) return false;
       if (lowOnly && !level(it)) return false;
       if (!kw) return true;
-      return [it.name, it.spec, it.brand, it.material, it.code, it.note, it.cat]
+      return [it.name, it.spec, it.brand, it.place, it.note, it.cat]
         .map(norm).join(' ').indexOf(kw) >= 0;
     });
 
@@ -1286,20 +1276,18 @@
       pill.className = 'cat-pill'; pill.textContent = it.cat;
       td(pill);
 
-      // 品名底下用小字掛品牌與耗材編號，表格才不會太寬
+      // 品名底下用小字掛品牌，表格才不會太寬
       var nameCell = td();
       var nm = document.createElement('div');
       nm.style.fontWeight = '600'; nm.textContent = it.name;
       nameCell.append(nm);
-      var sub = [it.brand, it.code].filter(Boolean).join(' · ');
-      if (sub) {
+      if (it.brand) {
         var s = document.createElement('div');
-        s.className = 'muted'; s.textContent = sub;
+        s.className = 'muted'; s.textContent = it.brand;
         nameCell.append(s);
       }
 
       td(it.spec || '—');
-      td(it.material || '—');
 
       var qtyCell = td();
       var box = document.createElement('div'); box.className = 'qty-cell';
@@ -1321,6 +1309,8 @@
       plus.onclick = function () { push({ action: 'step', id: it.id, delta: 1 }); };
       box.append(minus, numEl, plus);
       qtyCell.append(box);
+
+      td(it.place || '—');
 
       var noteCell = td(it.note || '—');
       noteCell.className = 'muted';
@@ -1377,9 +1367,8 @@
       spec: $('inv-spec').value.trim(),
       qty: Number($('inv-qty').value),
       unit: $('inv-unit').value.trim(),
-      code: $('inv-code').value.trim(),
       brand: $('inv-brand').value.trim(),
-      material: $('inv-material').value.trim(),
+      place: $('inv-place').value.trim(),
       note: $('inv-note').value.trim()
     };
   }
@@ -1392,12 +1381,11 @@
     // 先塞值再重建選項：選項是依分類過濾的，順序反了會找不到自己的品名
     $('inv-name').value = it.name;
     $('inv-spec').value = it.spec;
+    $('inv-unit').value = it.unit;
+    $('inv-brand').value = it.brand;
+    $('inv-place').value = it.place;
     refillPickers();
     $('inv-qty').value = it.qty;
-    $('inv-unit').value = it.unit;
-    $('inv-code').value = it.code;
-    $('inv-brand').value = it.brand;
-    $('inv-material').value = it.material;
     $('inv-note').value = it.note;
     // 編輯跟新增共用同一個框，標題不跟著變的話會誤以為是要新增一筆
     $('inv-form-title').textContent = '修改：' + it.name + (it.spec ? '　' + it.spec : '');
@@ -1412,9 +1400,10 @@
     editingId = null;
     form.reset();
     $('inv-name').value = ''; $('inv-spec').value = '';
+    $('inv-brand').value = ''; $('inv-place').value = '';
+    $('inv-unit').value = $('inv-cat').value === '線圈' ? '捲' : '個';
     refillPickers();
     $('inv-qty').value = 1;
-    $('inv-unit').value = '捲';
     $('inv-form-title').textContent = '新增／入庫';
     $('inv-submit').textContent = '新增／累加';
     $('inv-cancel').hidden = true;
@@ -1458,7 +1447,7 @@
   }
 
   /* ---------- 匯出 CSV（備份用，匯入已由試算表取代） ---------- */
-  var HEAD = ['分類', '品名', '耗材編號', '品牌', '顏色／規格', '材質', '數量', '單位', '備註', '最後更新', '更新者'];
+  var HEAD = ['分類', '品名', '顏色／規格', '數量', '單位', '品牌', '存放位置', '備註', '最後更新', '更新者'];
 
   function csvCell(v) {
     v = v == null ? '' : String(v);
@@ -1469,8 +1458,8 @@
     if (!items.length) { sync('error', '目前沒有資料可以匯出'); return; }
     var lines = [HEAD.map(csvCell).join(',')];
     items.forEach(function (it) {
-      lines.push([it.cat, it.name, it.code, it.brand, it.spec, it.material,
-                  fmtQty(it.qty), it.unit, it.note, it.updated, it.by].map(csvCell).join(','));
+      lines.push([it.cat, it.name, it.spec, fmtQty(it.qty), it.unit,
+                  it.brand, it.place, it.note, it.updated, it.by].map(csvCell).join(','));
     });
     // BOM：讓 Excel 正確認出 UTF-8 中文
     var blob = new Blob(['﻿' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8;' });

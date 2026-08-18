@@ -53,6 +53,9 @@ Apps Script（原始碼在 vault 的 `50_實驗室資料/耗材盤點_AppsScript
 | 低庫存門檻 | 同一份試算表的 **設定** 分頁 | 讀 |
 | 財產清冊 | 試算表「210財產」的 財產／保管品 分頁 | 唯讀 |
 
+耗材表欄位：`分類`（線圈／其他耗材）`品名` `顏色／規格` `數量` `單位`
+`品牌` `存放位置` `備註` `最後更新` `更新者`，另有隱藏的 `ID` 欄給程式對應資料列用。
+
 - 後端網址寫在 `index.html` 的 `var API = '…'`。重新部署 Apps Script 會產生新網址，
   換掉這一行即可。
 - 只讀不需驗證；每次寫入都會記錄「最後更新」與「更新者」。
@@ -65,10 +68,12 @@ Apps Script（原始碼在 vault 的 `50_實驗室資料/耗材盤點_AppsScript
 **JS 以 `getElementById` 抓的 DOM id**
 
 - 連線狀態：`inv-sync` `inv-sync-text` `inv-reload`
-- 表單：`inv-form` `inv-form-title` `inv-cat` `inv-qty` `inv-unit`
-  `inv-code` `inv-brand` `inv-material` `inv-note` `inv-submit` `inv-cancel`
-- 品名與顏色規格是「下拉選單＋自己打」兩件一組，**兩個 id 都不能拆開改**：
-  `inv-name-sel` ／ `inv-name`、`inv-spec-sel` ／ `inv-spec`
+- 表單：`inv-form` `inv-form-title` `inv-cat` `inv-qty` `inv-note`
+  `inv-submit` `inv-cancel`
+- 品名、顏色規格、單位、品牌、存放位置都是「下拉選單＋自己打」兩件一組，
+  **每組兩個 id 都不能拆開改**：
+  `inv-name-sel`／`inv-name`、`inv-spec-sel`／`inv-spec`、`inv-unit-sel`／`inv-unit`、
+  `inv-brand-sel`／`inv-brand`、`inv-place-sel`／`inv-place`
   （選單只是介面，真正送出的值一律讀那個隱藏的 `<input>`）
 - 工具列：`inv-search` `inv-filter` `inv-lowonly` `inv-export` `inv-sheet-link`
 - 操作者欄位：`inv-who` `inv-pw`
@@ -80,13 +85,18 @@ Apps Script（原始碼在 vault 的 `50_實驗室資料/耗材盤點_AppsScript
 
 **HTML `list=` 指向的 datalist id** —— 換掉輸入建議會消失，不會報錯
 
-- `inv-unit-list`（單位，選項寫死在 HTML）
-- `inv-brand-list` `inv-material-list`（品牌與材質，選項從現有資料動態長出來，
-  HTML 裡是空的，不要以為沒用到）
+已經全部改掉了，頁面上沒有 datalist。
 
-品名與顏色規格**刻意不用 datalist**：`<input list=...>` 長得像選單，但清單會被
-已輸入的字過濾，欄位有值時看起來像「只剩一個選項」，實際造成過誤解。改用真正的
-`<select>`，最後一項 `__new__`（＋ 其他（自己打））才切換到文字輸入。
+**刻意不用 `<input list=datalist>`**：它長得像選單，但清單會被已輸入的字過濾，
+欄位有值時看起來像「只剩一個選項」，實際造成過誤解。一律改用真正的 `<select>`，
+最後一項 `__new__`（＋ 其他（自己打））才切換到文字輸入。
+
+選項來源分兩種，都在 `refillPickers()` 裡組出來：
+
+- **從資料長出來**：只取「目前選的分類」用過的值，所以選線圈時不會看到噴頭的 0.2mm
+- **固定選項**（`PRESET_*`）：就算資料裡還沒出現過也要能選——
+  單位（線圈→捲；其他耗材→個/組/盒/包）、品牌（拓竹Bambu lab）、
+  存放位置（乾燥箱／好拿的箱子／紙箱）
 
 **CSS 選擇器用到的 id** —— 換掉排版會跑掉
 
